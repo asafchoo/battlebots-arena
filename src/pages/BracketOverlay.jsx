@@ -170,6 +170,8 @@ export default function BracketOverlay() {
           background: transparent !important;
         }
         ::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
       
       {/* Scanline effect */}
