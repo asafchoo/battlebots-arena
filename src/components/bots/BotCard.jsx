@@ -1,0 +1,58 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Swords, Users } from "lucide-react";
+
+export default function BotCard({ bot, onClick, selected }) {
+  return (
+    <Card 
+      className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden ${
+        selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/20' : 'hover:shadow-xl'
+      }`}
+      onClick={onClick}
+    >
+      <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800">
+        {bot.image_url ? (
+          <img 
+            src={bot.image_url} 
+            alt={bot.name} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Swords className="w-16 h-16 text-slate-600" />
+          </div>
+        )}
+        {bot.status === 'champion' && (
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-yellow-500 text-black font-bold">🏆 CHAMPION</Badge>
+          </div>
+        )}
+        {bot.status === 'eliminated' && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <span className="text-red-500 font-bold text-xl tracking-wider">ELIMINATED</span>
+          </div>
+        )}
+      </div>
+      <CardContent className="p-4 bg-slate-900/50">
+        <h3 className="font-bold text-lg text-white truncate">{bot.name}</h3>
+        <div className="flex items-center gap-2 text-slate-400 text-sm mt-1">
+          <Users className="w-3 h-3" />
+          <span className="truncate">{bot.team_name}</span>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-3">
+          {bot.weight_class && (
+            <Badge variant="outline" className="text-xs border-cyan-500/50 text-cyan-400">
+              {bot.weight_class}
+            </Badge>
+          )}
+          {bot.weapon_type && (
+            <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400">
+              {bot.weapon_type}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
