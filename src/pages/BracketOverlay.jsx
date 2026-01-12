@@ -109,7 +109,7 @@ export default function BracketOverlay() {
               : 'bg-slate-900/80 border-slate-700'
         }`}>
           {isActive && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 bg-cyan-500 text-black text-[10px] font-bold rounded">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-black rounded animate-pulse shadow-lg shadow-red-500/50">
               <Zap className="w-3 h-3" />
               LIVE
             </div>
@@ -190,49 +190,31 @@ export default function BracketOverlay() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 h-[calc(100%-80px)] overflow-hidden">
+      <div className="flex flex-col gap-2 h-[calc(100%-70px)] overflow-hidden">
         {/* Winners Bracket */}
-        <div className="space-y-1.5 flex-1 overflow-hidden">
-          <div className="flex items-center gap-2 text-cyan-400 text-sm">
+        <div className="space-y-1 h-[48%] overflow-hidden">
+          <div className="flex items-center gap-2 text-cyan-300 text-sm">
             <Trophy className="w-4 h-4" />
             <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/50 to-transparent" />
+            <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/70 to-transparent" />
           </div>
-          <div className="flex gap-4 overflow-x-hidden pb-1 h-full">
-            {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
-              <div key={`w-${round}`} className="flex flex-col gap-2 min-w-[160px]">
-                <div className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-semibold">
-                  Round {round}
-                </div>
-                <div className="flex flex-col gap-2 justify-around flex-1">
-                  {winnersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
-                    <MatchSlot 
-                      key={`w-${match.round}-${match.match_number}`} 
-                      match={match} 
-                      bracket="winners" 
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+          <div className="flex gap-3 overflow-x-auto pb-1 h-full scrollbar-hide">
+...
         {/* Losers Bracket */}
         {losers_bracket.length > 0 && (
-          <div className="space-y-1.5 flex-1 overflow-hidden">
-            <div className="flex items-center gap-2 text-red-400 text-sm">
+          <div className="space-y-1 h-[48%] overflow-hidden">
+            <div className="flex items-center gap-2 text-red-300 text-sm">
               <Skull className="w-4 h-4" />
               <span className="tracking-widest font-bold text-xs">LOSERS BRACKET</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-red-500/50 to-transparent" />
+              <div className="flex-1 h-px bg-gradient-to-r from-red-400/70 to-transparent" />
             </div>
-            <div className="flex gap-4 overflow-x-hidden pb-1 h-full">
+            <div className="flex gap-3 overflow-x-auto pb-1 h-full scrollbar-hide">
               {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-                <div key={`l-${round}`} className="flex flex-col gap-2 min-w-[160px]">
-                  <div className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-semibold">
-                    Round {round}
+                <div key={`l-${round}`} className="flex flex-col gap-1.5 min-w-[150px]">
+                  <div className="text-[9px] text-red-400/70 text-center uppercase tracking-wider font-bold">
+                    R{round}
                   </div>
-                  <div className="flex flex-col gap-2 justify-around flex-1">
+                  <div className="flex flex-col gap-1.5 justify-around flex-1">
                     {losersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
                       <MatchSlot 
                         key={`l-${match.round}-${match.match_number}`} 
@@ -249,14 +231,14 @@ export default function BracketOverlay() {
 
         {/* Grand Finals */}
         {grand_finals && (grand_finals.bot1_id || grand_finals.bot2_id) && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-center gap-2 text-yellow-400 text-sm">
-              <Trophy className="w-5 h-5" />
-              <span className="tracking-widest font-bold text-xs">GRAND FINALS</span>
-              <Trophy className="w-5 h-5" />
+          <div className="space-y-1 absolute bottom-4 left-1/2 -translate-x-1/2">
+            <div className="flex items-center justify-center gap-2 text-yellow-300 text-sm">
+              <Trophy className="w-4 h-4" />
+              <span className="tracking-widest font-bold text-[10px]">GRAND FINALS</span>
+              <Trophy className="w-4 h-4" />
             </div>
             <div className="flex justify-center">
-              <div className="w-[180px]">
+              <div className="w-[160px]">
                 <MatchSlot 
                   match={{ ...grand_finals, round: 0, match_number: 0 }} 
                   bracket="finals" 
@@ -268,10 +250,10 @@ export default function BracketOverlay() {
       </div>
 
       {/* Decorative corners */}
-      <div className="fixed top-6 left-6 w-12 h-12 border-l-2 border-t-2 border-cyan-500/50" />
-      <div className="fixed top-6 right-6 w-12 h-12 border-r-2 border-t-2 border-cyan-500/50" />
-      <div className="fixed bottom-6 left-6 w-12 h-12 border-l-2 border-b-2 border-cyan-500/50" />
-      <div className="fixed bottom-6 right-6 w-12 h-12 border-r-2 border-b-2 border-cyan-500/50" />
+      <div className="fixed top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-cyan-400/70" />
+      <div className="fixed top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-cyan-400/70" />
+      <div className="fixed bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-purple-400/70" />
+      <div className="fixed bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-purple-400/70" />
     </div>
   );
 }
