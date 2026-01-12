@@ -51,11 +51,11 @@ export default function CountdownOverlay() {
 
   if (!tournament?.current_match) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
+      <div className="w-screen h-screen bg-transparent flex items-center justify-center" style={{ width: '1920px', height: '1080px' }}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-cyan-500/50 text-xl font-mono tracking-wider"
+          className="text-cyan-500/50 text-3xl font-mono tracking-wider"
         >
           AWAITING NEXT MATCH...
         </motion.div>
@@ -64,7 +64,7 @@ export default function CountdownOverlay() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent flex items-center justify-center p-8 font-mono overflow-hidden">
+    <div className="w-screen h-screen bg-transparent flex items-center justify-center p-12 font-mono overflow-hidden" style={{ width: '1920px', height: '1080px' }}>
       {/* Scanline effect */}
       <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.05)_50%)] bg-[length:100%_4px] z-50" />
 
@@ -74,7 +74,7 @@ export default function CountdownOverlay() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.2 }}
-          className="relative w-full max-w-4xl"
+          className="relative w-full max-w-6xl"
         >
           {/* Glow background */}
           <div className={`absolute inset-0 rounded-3xl blur-3xl transition-colors duration-500 ${
@@ -94,22 +94,22 @@ export default function CountdownOverlay() {
                 : 'bg-gradient-to-r from-transparent via-cyan-500 to-transparent'
             }`} />
 
-            <div className="p-8">
+            <div className="p-12">
               {/* Header */}
-              <div className="text-center mb-8">
-                <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border text-xs tracking-widest uppercase ${
+              <div className="text-center mb-10">
+                <div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full border text-sm tracking-widest uppercase font-bold ${
                   isUrgent
                     ? 'border-red-500/50 text-red-400 bg-red-950/50'
                     : 'border-cyan-500/50 text-cyan-400 bg-cyan-950/50'
                 }`}>
-                  <Zap className={`w-3 h-3 ${isUrgent ? 'animate-pulse' : ''}`} />
+                  <Zap className={`w-4 h-4 ${isUrgent ? 'animate-pulse' : ''}`} />
                   {tournament.current_match.bracket === 'finals' ? 'GRAND FINALS' : 
                    tournament.current_match.bracket === 'losers' ? 'LOSERS BRACKET' : 'WINNERS BRACKET'}
                 </div>
               </div>
 
               {/* Combatants */}
-              <div className="flex items-center justify-center gap-6 md:gap-12">
+              <div className="flex items-center justify-center gap-16">
                 {/* Bot 1 */}
                 <motion.div
                   initial={{ x: -100, opacity: 0 }}
@@ -118,7 +118,7 @@ export default function CountdownOverlay() {
                   className="flex-1 text-center"
                 >
                   {bot1?.image_url && (
-                    <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 rounded-xl overflow-hidden border-2 border-cyan-500/30">
+                    <div className="relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 border-cyan-500/30">
                       <img 
                         src={bot1.image_url} 
                         alt={bot1.name}
@@ -127,10 +127,10 @@ export default function CountdownOverlay() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     </div>
                   )}
-                  <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
+                  <h2 className="text-5xl font-black text-white uppercase tracking-tight">
                     {bot1?.name || "TBD"}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">{bot1?.team_name}</p>
+                  <p className="text-lg text-slate-500 mt-2">{bot1?.team_name}</p>
                 </motion.div>
 
                 {/* VS */}
@@ -140,12 +140,12 @@ export default function CountdownOverlay() {
                   transition={{ delay: 0.4, type: "spring" }}
                   className="flex-shrink-0"
                 >
-                  <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-colors duration-500 ${
+                  <div className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-500 ${
                     isUrgent
                       ? 'bg-red-900/50 border-2 border-red-500'
                       : 'bg-cyan-900/50 border-2 border-cyan-500'
                   }`}>
-                    <Swords className={`w-8 h-8 md:w-10 md:h-10 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
+                    <Swords className={`w-12 h-12 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
                     {/* Rotating ring */}
                     <div className={`absolute inset-0 rounded-full border-2 border-dashed animate-spin ${
                       isUrgent ? 'border-red-500/30' : 'border-cyan-500/30'
@@ -161,7 +161,7 @@ export default function CountdownOverlay() {
                   className="flex-1 text-center"
                 >
                   {bot2?.image_url && (
-                    <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 rounded-xl overflow-hidden border-2 border-purple-500/30">
+                    <div className="relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 border-purple-500/30">
                       <img 
                         src={bot2.image_url} 
                         alt={bot2.name}
@@ -170,10 +170,10 @@ export default function CountdownOverlay() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     </div>
                   )}
-                  <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
+                  <h2 className="text-5xl font-black text-white uppercase tracking-tight">
                     {bot2?.name || "TBD"}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">{bot2?.team_name}</p>
+                  <p className="text-lg text-slate-500 mt-2">{bot2?.team_name}</p>
                 </motion.div>
               </div>
 
@@ -182,16 +182,16 @@ export default function CountdownOverlay() {
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="mt-10 text-center"
+                className="mt-12 text-center"
               >
-                <div className={`text-7xl md:text-9xl font-black tabular-nums transition-colors duration-500 ${
+                <div className={`text-[140px] font-black tabular-nums transition-colors duration-500 leading-none ${
                   isUrgent 
                     ? 'text-red-500 animate-pulse' 
                     : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
                 }`}>
                   {formatTime(timeLeft)}
                 </div>
-                <div className="text-xs text-slate-500 tracking-[0.5em] uppercase mt-2">
+                <div className="text-base text-slate-500 tracking-[0.5em] uppercase mt-4 font-bold">
                   {timeLeft === 0 ? 'TIME!' : 'Remaining'}
                 </div>
               </motion.div>
@@ -206,10 +206,10 @@ export default function CountdownOverlay() {
           </div>
 
           {/* Corner decorations */}
-          <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-cyan-500" />
-          <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-cyan-500" />
-          <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-purple-500" />
-          <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-purple-500" />
+          <div className="absolute -top-3 -left-3 w-10 h-10 border-l-2 border-t-2 border-cyan-500" />
+          <div className="absolute -top-3 -right-3 w-10 h-10 border-r-2 border-t-2 border-cyan-500" />
+          <div className="absolute -bottom-3 -left-3 w-10 h-10 border-l-2 border-b-2 border-purple-500" />
+          <div className="absolute -bottom-3 -right-3 w-10 h-10 border-r-2 border-b-2 border-purple-500" />
         </motion.div>
       </AnimatePresence>
     </div>
