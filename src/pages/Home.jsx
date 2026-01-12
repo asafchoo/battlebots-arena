@@ -434,7 +434,26 @@ export default function Home() {
                   <CardTitle className="text-white flex items-center justify-between">
                     <span>{tournament.name}</span>
                     {tournament.current_match && (
-                      <Badge className="bg-red-500 animate-pulse">LIVE</Badge>
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-red-500 animate-pulse">LIVE</Badge>
+                        <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg border border-slate-600">
+                          <span className="text-sm text-slate-400">Select Winner:</span>
+                          <Button
+                            size="sm"
+                            onClick={() => selectWinnerMutation.mutate(tournament.current_match.bot1_id)}
+                            className="bg-cyan-600 hover:bg-cyan-700 h-7 text-xs"
+                          >
+                            {bots.find(b => b.id === tournament.current_match.bot1_id)?.name}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => selectWinnerMutation.mutate(tournament.current_match.bot2_id)}
+                            className="bg-purple-600 hover:bg-purple-700 h-7 text-xs"
+                          >
+                            {bots.find(b => b.id === tournament.current_match.bot2_id)?.name}
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </CardTitle>
                 </CardHeader>
