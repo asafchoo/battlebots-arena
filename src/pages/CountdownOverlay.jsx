@@ -51,7 +51,12 @@ export default function CountdownOverlay() {
 
   if (!tournament?.current_match) {
     return (
-      <div className="w-screen h-screen bg-transparent flex items-center justify-center" style={{ width: '1920px', height: '1080px' }}>
+      <div className="fixed inset-0 w-screen h-screen bg-transparent flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
+        <style>{`
+          body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: transparent !important; }
+          html { overflow: hidden !important; background: transparent !important; }
+          ::-webkit-scrollbar { display: none; }
+        `}</style>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -64,7 +69,13 @@ export default function CountdownOverlay() {
   }
 
   return (
-    <div className="w-screen h-screen bg-transparent flex items-center justify-center p-12 font-mono overflow-hidden" style={{ width: '1920px', height: '1080px' }}>
+    <div className="fixed inset-0 w-screen h-screen bg-transparent flex items-center justify-center p-12 font-mono overflow-hidden" style={{ width: '1920px', height: '1080px', margin: 0 }}>
+      <style>{`
+        body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: transparent !important; }
+        html { overflow: hidden !important; background: transparent !important; }
+        ::-webkit-scrollbar { display: none; }
+      `}</style>
+      
       {/* Scanline effect */}
       <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.05)_50%)] bg-[length:100%_4px] z-50" />
 
