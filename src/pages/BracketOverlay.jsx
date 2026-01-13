@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function BracketOverlay() {
   const [glitchActive, setGlitchActive] = useState(false);
+  const [showBracket, setShowBracket] = useState('winners'); // 'winners' or 'losers'
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
@@ -29,6 +30,14 @@ export default function BracketOverlay() {
       return () => clearTimeout(timer);
     }
   }, [tournament?.current_match?.match_number]);
+
+  // Switch between winners and losers bracket every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowBracket(prev => prev === 'winners' ? 'losers' : 'winners');
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!tournament) {
     return (
@@ -182,14 +191,7 @@ export default function BracketOverlay() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,cyan_1px,transparent_1px),linear-gradient(to_bottom,cyan_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>
 
-      {/* Header */}
-      <div className="text-center mb-1 relative">
-        <h1 className="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
-          {tournament.name}
-        </h1>
-      </div>
-
-      <div className="flex flex-col gap-2 min-h-[calc(100%-40px)]">
+      <div className="flex flex-col gap-3 h-full">
         {/* Winners Bracket */}
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-cyan-300 text-sm">
@@ -248,14 +250,14 @@ export default function BracketOverlay() {
 
         {/* Grand Finals */}
         {grand_finals && (grand_finals.bot1_id || grand_finals.bot2_id) && (
-          <div className="space-y-1 mt-4 flex flex-col items-center">
-            <div className="flex items-center justify-center gap-2 text-yellow-300 text-sm">
-              <Trophy className="w-4 h-4" />
-              <span className="tracking-widest font-bold text-[10px]">GRAND FINALS</span>
-              <Trophy className="w-4 h-4" />
+          <div className="space-y-2 mt-4 flex flex-col items-center">
+            <div className="flex items-center justify-center gap-2 text-yellow-300 text-base">
+              <Trophy className="w-5 h-5" />
+              <span className="tracking-widest font-bold">GRAND FINALS</span>
+              <Trophy className="w-5 h-5" />
             </div>
             <div className="flex justify-center">
-              <div className="w-[130px]">
+              <div className="w-[140px]">
                 <MatchSlot 
                   match={{ ...grand_finals, round: 0, match_number: 0 }} 
                   bracket="finals" 
