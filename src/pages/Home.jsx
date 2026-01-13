@@ -14,12 +14,14 @@ import BotRegistrationForm from "@/components/bots/BotRegistrationForm";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
 import { 
   Plus, Play, Trophy, Users, Swords, ExternalLink, 
-  Shuffle, AlertCircle, Timer, Monitor, Loader2 
+  Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw
 } from "lucide-react";
 
 export default function Home() {
   const [showRegForm, setShowRegForm] = useState(false);
   const [tournamentName, setTournamentName] = useState("Battle Bots Championship");
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetPassword, setResetPassword] = useState("");
   const queryClient = useQueryClient();
 
   const { data: bots = [], isLoading: botsLoading } = useQuery({
@@ -255,6 +257,41 @@ export default function Home() {
     }
   };
 
+  const resetTournamentMutation = useMutation({
+    mutationFn: async () => {
+      // Reset all bots to registered status
+      const botPromises = bots.map(bot => 
+        base44.entities.Bot.update(bot.id, { status: 'registered', seed: null })
+      );
+      await Promise.all(botPromises);
+
+      // Delete all tournaments
+      if (tournament) {
+        await base44.entities.Tournament.delete(tournament.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      queryClient.invalidateQueries({ queryKey: ['bots'] });
+      setShowResetDialog(false);
+      setResetPassword("");
+    }
+  });
+
+  const handleResetConfirm = () => {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yy = String(today.getFullYear()).slice(-2);
+    const expectedPassword = `battlebot${dd}${mm}${yy}`;
+    
+    if (resetPassword === expectedPassword) {
+      resetTournamentMutation.mutate();
+    } else {
+      alert("Incorrect password!");
+    }
+  };
+
   const isLoading = botsLoading || tourneysLoading;
 
   return (
@@ -339,6 +376,48 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">Registered Bots</h2>
               <div className="flex gap-3">
+                <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Reset Tournament
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-slate-900 border-slate-700">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">Reset Tournament</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="flex items-center gap-2 p-3 bg-red-950 rounded-lg border border-red-800">
+                        <AlertCircle className="w-5 h-5 text-red-400" />
+                        <span className="text-sm text-red-300">
+                          This will reset all battles and tournament progress!
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-sm text-slate-400">Enter Password</label>
+                        <Input 
+                          type="password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          placeholder="battlebot + date (ddmmyy)"
+                          className="bg-slate-800 border-slate-600 text-white mt-1"
+                          onKeyDown={(e) => e.key === 'Enter' && handleResetConfirm()}
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleResetConfirm}
+                        disabled={resetTournamentMutation.isPending || !resetPassword}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                      >
+                        {resetTournamentMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : null}
+                        Confirm Reset
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Dialog open={showRegForm} onOpenChange={setShowRegForm}>
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-cyan-500 to-purple-600">
