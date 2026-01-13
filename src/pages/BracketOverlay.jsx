@@ -193,47 +193,49 @@ export default function BracketOverlay() {
 
       <div className="flex flex-col gap-3 h-full">
         {/* Winners Bracket */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-cyan-300 text-sm">
-            <Trophy className="w-4 h-4" />
-            <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/70 to-transparent" />
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-            {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
-              <div key={`w-${round}`} className="flex flex-col gap-1 min-w-[130px]">
-                <div className="text-[8px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
-                  R{round}
+        {showBracket === 'winners' && (
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 text-cyan-300 text-lg">
+              <Trophy className="w-5 h-5" />
+              <span className="tracking-widest font-bold">WINNERS BRACKET</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/70 to-transparent" />
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide h-[calc(100%-40px)]">
+              {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
+                <div key={`w-${round}`} className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="text-[10px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
+                    ROUND {round}
+                  </div>
+                  <div className="flex flex-col gap-2 justify-around flex-1">
+                    {winnersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
+                      <MatchSlot 
+                        key={`w-${match.round}-${match.match_number}`} 
+                        match={match} 
+                        bracket="winners" 
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5 justify-around flex-1">
-                  {winnersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
-                    <MatchSlot 
-                      key={`w-${match.round}-${match.match_number}`} 
-                      match={match} 
-                      bracket="winners" 
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Losers Bracket */}
-        {losers_bracket.length > 0 && (
-          <div className="space-y-1 mt-2">
-            <div className="flex items-center gap-2 text-red-300 text-sm">
-              <Skull className="w-4 h-4" />
-              <span className="tracking-widest font-bold text-xs">LOSERS BRACKET</span>
+        {showBracket === 'losers' && losers_bracket.length > 0 && (
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 text-red-300 text-lg">
+              <Skull className="w-5 h-5" />
+              <span className="tracking-widest font-bold">LOSERS BRACKET</span>
               <div className="flex-1 h-px bg-gradient-to-r from-red-400/70 to-transparent" />
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide h-[calc(100%-40px)]">
               {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-                <div key={`l-${round}`} className="flex flex-col gap-1 min-w-[130px]">
-                  <div className="text-[8px] text-red-400/70 text-center uppercase tracking-wider font-bold">
-                    R{round}
+                <div key={`l-${round}`} className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="text-[10px] text-red-400/70 text-center uppercase tracking-wider font-bold">
+                    ROUND {round}
                   </div>
-                  <div className="flex flex-col gap-1.5 justify-around flex-1">
+                  <div className="flex flex-col gap-2 justify-around flex-1">
                     {losersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
                       <MatchSlot 
                         key={`l-${match.round}-${match.match_number}`} 
