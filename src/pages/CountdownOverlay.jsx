@@ -37,27 +37,28 @@ export default function CountdownOverlay() {
       return;
     }
 
+    // If paused, use the stored paused_time_remaining
+    if (tournament.is_paused) {
+      if (tournament.paused_time_remaining !== undefined) {
+        setTimeLeft(tournament.paused_time_remaining);
+        setIsUrgent(tournament.paused_time_remaining <= 30);
+      }
+      return;
+    }
+
+    // If not paused, calculate from countdown_end
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
       const diff = Math.max(0, Math.floor((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
-      
-      // Store paused time in database when paused
-      if (tournament.is_paused && tournament.paused_time_remaining !== diff) {
-        base44.entities.Tournament.update(tournament.id, {
-          paused_time_remaining: diff
-        });
-      }
     };
 
     updateTimer();
-    
-    // Continue updating even when paused to keep paused_time_remaining in sync
-    const interval = setInterval(updateTimer, tournament.is_paused ? 5000 : 1000);
+    const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.id]);
+  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining, tournament?.id]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -93,14 +94,14 @@ export default function CountdownOverlay() {
 
   const winnerId = tournament.current_match?.winner_id || (showLastResult ? tournament.last_match_result?.winner_id : null);
   const showJudgesView = timeLeft === 0 && !winnerId && tournament.current_match;
-  const showWinnerView = (timeLeft === 0 && winnerId) || showLastResult;
+  const showWinnerView = winnerId || showLastResult;
 
   return (
     <motion.div 
       className="fixed font-mono overflow-hidden" 
       style={{ width: '1920px', height: '1080px', margin: 0 }}
       animate={{
-        height: (isCompact && timeLeft > 0) ? '140px' : '1080px',
+        height: (isCompact && timeLeft > 0 && !showWinnerView) ? '140px' : '1080px',
         top: 0
       }}
       transition={{ duration: 0.5, ease: "easeInOut" }}

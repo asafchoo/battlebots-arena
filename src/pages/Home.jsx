@@ -597,8 +597,11 @@ export default function Home() {
                           onClick={() => {
                             const updates = { is_paused: !tournament.is_paused };
                             if (!tournament.is_paused) {
-                              // Pausing - just set flag, overlay will handle timing
-                              // Don't update countdown_end
+                              // Pausing - calculate and store remaining time
+                              const end = new Date(tournament.countdown_end).getTime();
+                              const now = Date.now();
+                              const remaining = Math.max(0, Math.floor((end - now) / 1000));
+                              updates.paused_time_remaining = remaining;
                             } else {
                               // Resuming - calculate new end time from stored remaining time
                               updates.countdown_end = new Date(Date.now() + (tournament.paused_time_remaining || 0) * 1000).toISOString();
