@@ -1,13 +1,13 @@
-import Home from './pages/Home';
 import BracketOverlay from './pages/BracketOverlay';
 import CountdownOverlay from './pages/CountdownOverlay';
+import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Home": Home,
     "BracketOverlay": BracketOverlay,
     "CountdownOverlay": CountdownOverlay,
+    "Home": Home,
 }
 
 export const pagesConfig = {

@@ -7,6 +7,7 @@ import { Swords, Zap } from "lucide-react";
 export default function CountdownOverlay() {
   const [timeLeft, setTimeLeft] = useState(180);
   const [isUrgent, setIsUrgent] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
@@ -20,6 +21,15 @@ export default function CountdownOverlay() {
   });
 
   const tournament = tournaments[0];
+
+  // Transition to compact mode after 3 seconds
+  useEffect(() => {
+    if (tournament?.current_match) {
+      setIsCompact(false);
+      const timer = setTimeout(() => setIsCompact(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [tournament?.current_match?.match_number]);
 
   useEffect(() => {
     if (!tournament?.countdown_end) {
@@ -69,23 +79,37 @@ export default function CountdownOverlay() {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-transparent flex items-center justify-center p-12 font-mono overflow-hidden" style={{ width: '1920px', height: '1080px', margin: 0 }}>
+    <motion.div 
+      className="fixed font-mono overflow-hidden" 
+      style={{ width: '1920px', height: '1080px', margin: 0 }}
+      animate={{
+        height: isCompact ? '70px' : '1080px',
+        top: isCompact ? 0 : 0
+      }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
+    >
       <style>{`
         body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: transparent !important; }
         html { overflow: hidden !important; background: transparent !important; }
         ::-webkit-scrollbar { display: none; }
       `}</style>
       
-      {/* Scanline effect */}
-      <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.05)_50%)] bg-[length:100%_4px] z-50" />
+      {/* Scanline effect - only in intro mode */}
+      {!isCompact && (
+        <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.05)_50%)] bg-[length:100%_4px] z-50" />
+      )}
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={tournament.current_match.match_number}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.2 }}
-          className="relative w-full max-w-6xl"
+        {!isCompact ? (
+          // Full intro view
+          <motion.div
+            key={`intro-${tournament.current_match.match_number}`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute inset-0 flex items-center justify-center p-12"
+          >
+            <div className="relative w-full max-w-6xl"
         >
           {/* Glow background */}
           <div className={`absolute inset-0 rounded-3xl blur-3xl transition-colors duration-500 ${
@@ -216,13 +240,59 @@ export default function CountdownOverlay() {
             }`} />
           </div>
 
-          {/* Corner decorations */}
-          <div className="absolute -top-3 -left-3 w-10 h-10 border-l-2 border-t-2 border-cyan-500" />
-          <div className="absolute -top-3 -right-3 w-10 h-10 border-r-2 border-t-2 border-cyan-500" />
-          <div className="absolute -bottom-3 -left-3 w-10 h-10 border-l-2 border-b-2 border-purple-500" />
-          <div className="absolute -bottom-3 -right-3 w-10 h-10 border-r-2 border-b-2 border-purple-500" />
+            {/* Corner decorations */}
+            <div className="absolute -top-3 -left-3 w-10 h-10 border-l-2 border-t-2 border-cyan-500" />
+            <div className="absolute -top-3 -right-3 w-10 h-10 border-r-2 border-t-2 border-cyan-500" />
+            <div className="absolute -bottom-3 -left-3 w-10 h-10 border-l-2 border-b-2 border-purple-500" />
+            <div className="absolute -bottom-3 -right-3 w-10 h-10 border-r-2 border-b-2 border-purple-500" />
+          </div>
         </motion.div>
+        ) : (
+          // Compact strip view
+          <motion.div
+            key={`compact-${tournament.current_match.match_number}`}
+            initial={{ opacity: 0, y: -70 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full h-[70px] flex items-center justify-between px-8 backdrop-blur-sm bg-slate-950/70 border-b-2 border-cyan-500/50"
+          >
+            {/* Bot 1 */}
+            <div className="flex items-center gap-4 flex-1">
+              {bot1?.image_url && (
+                <img src={bot1.image_url} alt={bot1.name} className="w-12 h-12 rounded-lg object-cover border-2 border-cyan-500/50" />
+              )}
+              <div>
+                <h3 className="text-lg font-bold text-white uppercase">{bot1?.name || "TBD"}</h3>
+                <p className="text-xs text-slate-400">{bot1?.team_name}</p>
+              </div>
+            </div>
+
+            {/* VS & Timer */}
+            <div className="flex items-center gap-6 flex-shrink-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isUrgent ? 'bg-red-900/50 border-2 border-red-500' : 'bg-cyan-900/50 border-2 border-cyan-500'
+              }`}>
+                <Swords className={`w-5 h-5 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
+              </div>
+              <div className={`text-5xl font-black tabular-nums ${
+                isUrgent ? 'text-red-500 animate-pulse' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
+              }`}>
+                {formatTime(timeLeft)}
+              </div>
+            </div>
+
+            {/* Bot 2 */}
+            <div className="flex items-center gap-4 flex-1 justify-end">
+              <div className="text-right">
+                <h3 className="text-lg font-bold text-white uppercase">{bot2?.name || "TBD"}</h3>
+                <p className="text-xs text-slate-400">{bot2?.team_name}</p>
+              </div>
+              {bot2?.image_url && (
+                <img src={bot2.image_url} alt={bot2.name} className="w-12 h-12 rounded-lg object-cover border-2 border-purple-500/50" />
+              )}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
