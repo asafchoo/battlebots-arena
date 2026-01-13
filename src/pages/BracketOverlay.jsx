@@ -101,7 +101,7 @@ export default function BracketOverlay() {
           } animate-pulse`} />
         )}
         
-        <div className={`relative p-1.5 rounded-lg border backdrop-blur-sm ${
+        <div className={`relative p-1 rounded-lg border backdrop-blur-sm ${
           isActive 
             ? 'bg-cyan-800/60 border-cyan-300 shadow-lg shadow-cyan-500/40' 
             : isNext
@@ -109,19 +109,19 @@ export default function BracketOverlay() {
               : 'bg-slate-800/50 border-slate-600'
         }`}>
           {isActive && (
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-black rounded animate-pulse shadow-lg shadow-red-500/50">
+            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-black rounded animate-pulse shadow-lg shadow-red-500/50">
               <Zap className="w-3 h-3" />
               LIVE
             </div>
           )}
           {isNext && !isActive && (
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-yellow-400 text-black text-[9px] font-black rounded animate-pulse shadow-lg shadow-yellow-400/50">
+            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-yellow-400 text-black text-[8px] font-black rounded animate-pulse shadow-lg shadow-yellow-400/50">
               NEXT
             </div>
           )}
 
           {/* Bot 1 */}
-          <div className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] font-semibold ${
+          <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
             match.winner_id === match.bot1_id 
               ? 'bg-green-500/40 text-green-200 border border-green-400' 
               : match.winner_id 
@@ -129,15 +129,15 @@ export default function BracketOverlay() {
                 : 'text-slate-200 bg-slate-700/30'
           }`}>
             {bot1?.image_url && (
-              <img src={bot1.image_url} className="w-4 h-4 rounded object-cover" alt="" />
+              <img src={bot1.image_url} className="w-3 h-3 rounded object-cover" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot1_id)}</span>
           </div>
 
-          <div className="text-center text-[8px] text-cyan-400/70 font-mono my-0.5 font-bold">VS</div>
+          <div className="text-center text-[7px] text-cyan-400/70 font-mono my-0.5 font-bold">VS</div>
 
           {/* Bot 2 */}
-          <div className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] font-semibold ${
+          <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
             match.winner_id === match.bot2_id 
               ? 'bg-green-500/40 text-green-200 border border-green-400' 
               : match.winner_id 
@@ -145,7 +145,7 @@ export default function BracketOverlay() {
                 : 'text-slate-200 bg-slate-700/30'
           }`}>
             {bot2?.image_url && (
-              <img src={bot2.image_url} className="w-4 h-4 rounded object-cover" alt="" />
+              <img src={bot2.image_url} className="w-3 h-3 rounded object-cover" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot2_id)}</span>
           </div>
@@ -202,8 +202,8 @@ export default function BracketOverlay() {
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
             {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
-              <div key={`w-${round}`} className="flex flex-col gap-1.5 min-w-[150px]">
-                <div className="text-[9px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
+              <div key={`w-${round}`} className="flex flex-col gap-1 min-w-[130px]">
+                <div className="text-[8px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
                   R{round}
                 </div>
                 <div className="flex flex-col gap-1.5 justify-around flex-1">
@@ -230,8 +230,8 @@ export default function BracketOverlay() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
               {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-                <div key={`l-${round}`} className="flex flex-col gap-1.5 min-w-[150px]">
-                  <div className="text-[9px] text-red-400/70 text-center uppercase tracking-wider font-bold">
+                <div key={`l-${round}`} className="flex flex-col gap-1 min-w-[130px]">
+                  <div className="text-[8px] text-red-400/70 text-center uppercase tracking-wider font-bold">
                     R{round}
                   </div>
                   <div className="flex flex-col gap-1.5 justify-around flex-1">
@@ -258,7 +258,7 @@ export default function BracketOverlay() {
               <Trophy className="w-4 h-4" />
             </div>
             <div className="flex justify-center">
-              <div className="w-[160px]">
+              <div className="w-[130px]">
                 <MatchSlot 
                   match={{ ...grand_finals, round: 0, match_number: 0 }} 
                   bracket="finals" 
