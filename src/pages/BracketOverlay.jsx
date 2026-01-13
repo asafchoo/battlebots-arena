@@ -183,16 +183,13 @@ export default function BracketOverlay() {
       </div>
 
       {/* Header */}
-      <div className="text-center mb-3 relative">
-        <h1 className="text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
+      <div className="text-center mb-1 relative">
+        <h1 className="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
           {tournament.name}
         </h1>
-        <div className="text-xs text-cyan-600 tracking-[0.3em] uppercase mt-0.5">
-          Double Elimination
-        </div>
       </div>
 
-      <div className="flex flex-col gap-2 min-h-[calc(100%-70px)]">
+      <div className="flex flex-col gap-2 min-h-[calc(100%-40px)]">
         {/* Winners Bracket */}
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-cyan-300 text-sm">
