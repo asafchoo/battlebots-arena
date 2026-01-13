@@ -191,10 +191,10 @@ export default function BracketOverlay() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,cyan_1px,transparent_1px),linear-gradient(to_bottom,cyan_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>
 
-      <div className="flex flex-col gap-3 h-full justify-center">
+      <div className="flex flex-col gap-3 h-full items-center justify-center">
         {/* Winners Bracket */}
         {showBracket === 'winners' && (
-          <div className="space-y-1">
+          <div className="space-y-1 w-full">
             <div className="flex items-center gap-2 text-cyan-300 text-sm">
               <Trophy className="w-4 h-4" />
               <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
@@ -223,7 +223,7 @@ export default function BracketOverlay() {
 
         {/* Losers Bracket */}
         {showBracket === 'losers' && losers_bracket.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-1 w-full">
             <div className="flex items-center gap-2 text-red-300 text-sm">
               <Skull className="w-4 h-4" />
               <span className="tracking-widest font-bold text-xs">LOSERS BRACKET</span>
