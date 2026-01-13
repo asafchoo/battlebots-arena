@@ -41,7 +41,7 @@ export default function BracketOverlay() {
 
   if (!tournament) {
     return (
-      <div className="fixed inset-0 w-screen h-screen bg-slate-800 flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
+      <div className="fixed inset-0 w-screen h-screen bg-slate-800 flex items-center justify-center">
         <style>{`
           body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #1e293b !important; }
           html { overflow: hidden !important; background: #1e293b !important; }
@@ -166,7 +166,7 @@ export default function BracketOverlay() {
   return (
     <div className={`fixed inset-0 w-screen h-screen bg-slate-800 p-4 font-mono text-white overflow-auto ${
       glitchActive ? 'animate-pulse' : ''
-    }`} style={{ width: '1920px', height: '1080px', margin: 0, padding: '16px' }}>
+    }`}>
       <style>{`
         body { 
           margin: 0 !important; 
