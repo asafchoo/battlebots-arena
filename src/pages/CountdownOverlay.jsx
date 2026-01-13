@@ -63,10 +63,14 @@ export default function CountdownOverlay() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const bot1 = bots.find(b => b.id === tournament?.current_match?.bot1_id);
-  const bot2 = bots.find(b => b.id === tournament?.current_match?.bot2_id);
+  // Check if we should show last match result
+  const showLastResult = tournament?.last_match_result && 
+    new Date().getTime() - new Date(tournament.last_match_result.timestamp).getTime() < 8000;
 
-  if (!tournament?.current_match) {
+  const bot1 = bots.find(b => b.id === (tournament?.current_match?.bot1_id || tournament?.last_match_result?.bot1_id));
+  const bot2 = bots.find(b => b.id === (tournament?.current_match?.bot2_id || tournament?.last_match_result?.bot2_id));
+
+  if (!tournament?.current_match && !showLastResult) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-transparent flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
         <style>{`
@@ -85,8 +89,9 @@ export default function CountdownOverlay() {
     );
   }
 
-  const showJudgesView = timeLeft === 0 && !tournament.current_match.winner_id;
-  const showWinnerView = timeLeft === 0 && tournament.current_match.winner_id;
+  const winnerId = tournament.current_match?.winner_id || (showLastResult ? tournament.last_match_result?.winner_id : null);
+  const showJudgesView = timeLeft === 0 && !winnerId && tournament.current_match;
+  const showWinnerView = (timeLeft === 0 && winnerId) || showLastResult;
 
   return (
     <motion.div 
@@ -154,13 +159,13 @@ export default function CountdownOverlay() {
                     {/* Bot 1 */}
                     <motion.div
                       animate={{ 
-                        scale: showWinnerView && tournament.current_match.winner_id === bot1?.id ? 1.15 : showWinnerView ? 0.85 : 1,
-                        opacity: showWinnerView && tournament.current_match.winner_id !== bot1?.id ? 0.4 : 1
+                        scale: showWinnerView && winnerId === bot1?.id ? 1.15 : showWinnerView ? 0.85 : 1,
+                        opacity: showWinnerView && winnerId !== bot1?.id ? 0.4 : 1
                       }}
                       transition={{ duration: 0.5 }}
                       className="flex-1 text-center relative"
                     >
-                      {showWinnerView && tournament.current_match.winner_id === bot1?.id && (
+                      {showWinnerView && winnerId === bot1?.id && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -171,7 +176,7 @@ export default function CountdownOverlay() {
                       )}
                       {bot1?.image_url && (
                         <div className={`relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 ${
-                          showWinnerView && tournament.current_match.winner_id === bot1?.id 
+                          showWinnerView && winnerId === bot1?.id 
                             ? 'border-green-500 shadow-lg shadow-green-500/50' 
                             : 'border-cyan-500/30'
                         }`}>
@@ -184,7 +189,7 @@ export default function CountdownOverlay() {
                         </div>
                       )}
                       <h2 className={`text-5xl font-black uppercase tracking-tight ${
-                        showWinnerView && tournament.current_match.winner_id === bot1?.id 
+                        showWinnerView && winnerId === bot1?.id 
                           ? 'text-green-400' 
                           : 'text-white'
                       }`}>
@@ -207,13 +212,13 @@ export default function CountdownOverlay() {
                     {/* Bot 2 */}
                     <motion.div
                       animate={{ 
-                        scale: showWinnerView && tournament.current_match.winner_id === bot2?.id ? 1.15 : showWinnerView ? 0.85 : 1,
-                        opacity: showWinnerView && tournament.current_match.winner_id !== bot2?.id ? 0.4 : 1
+                        scale: showWinnerView && winnerId === bot2?.id ? 1.15 : showWinnerView ? 0.85 : 1,
+                        opacity: showWinnerView && winnerId !== bot2?.id ? 0.4 : 1
                       }}
                       transition={{ duration: 0.5 }}
                       className="flex-1 text-center relative"
                     >
-                      {showWinnerView && tournament.current_match.winner_id === bot2?.id && (
+                      {showWinnerView && winnerId === bot2?.id && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -224,7 +229,7 @@ export default function CountdownOverlay() {
                       )}
                       {bot2?.image_url && (
                         <div className={`relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 ${
-                          showWinnerView && tournament.current_match.winner_id === bot2?.id 
+                          showWinnerView && winnerId === bot2?.id 
                             ? 'border-green-500 shadow-lg shadow-green-500/50' 
                             : 'border-purple-500/30'
                         }`}>
@@ -237,7 +242,7 @@ export default function CountdownOverlay() {
                         </div>
                       )}
                       <h2 className={`text-5xl font-black uppercase tracking-tight ${
-                        showWinnerView && tournament.current_match.winner_id === bot2?.id 
+                        showWinnerView && winnerId === bot2?.id 
                           ? 'text-green-400' 
                           : 'text-white'
                       }`}>

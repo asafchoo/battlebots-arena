@@ -190,9 +190,29 @@ export default function Home() {
         updates.status = 'completed';
       }
 
-      updates.current_match = null;
+      // Store last match result for overlay
+      updates.last_match_result = {
+        bot1_id: tournament.current_match.bot1_id,
+        bot2_id: tournament.current_match.bot2_id,
+        winner_id: winnerId,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Set winner_id on current_match before clearing it
+      updates.current_match = {
+        ...tournament.current_match,
+        winner_id: winnerId
+      };
       
       await base44.entities.Tournament.update(tournament.id, updates);
+      
+      // Clear current_match after 5 seconds to allow overlay to show winner
+      setTimeout(async () => {
+        await base44.entities.Tournament.update(tournament.id, { 
+          current_match: null
+        });
+        queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      }, 5000);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
