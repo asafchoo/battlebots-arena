@@ -515,6 +515,64 @@ export default function Home() {
                     {tournament.current_match && (
                       <div className="flex items-center gap-3">
                         <Badge className="bg-red-500 animate-pulse">LIVE</Badge>
+                        
+                        {/* Pause/Resume */}
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const updates = { is_paused: !tournament.is_paused };
+                            if (!tournament.is_paused) {
+                              // Pausing - store remaining time
+                              const end = new Date(tournament.countdown_end).getTime();
+                              const now = Date.now();
+                              const remaining = Math.max(0, Math.floor((end - now) / 1000));
+                              updates.paused_time_remaining = remaining;
+                            } else {
+                              // Resuming - calculate new end time
+                              updates.countdown_end = new Date(Date.now() + (tournament.paused_time_remaining || 0) * 1000).toISOString();
+                            }
+                            base44.entities.Tournament.update(tournament.id, updates).then(() => {
+                              queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                            });
+                          }}
+                          className={`h-7 text-xs ${tournament.is_paused ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`}
+                        >
+                          {tournament.is_paused ? 'Resume' : 'Pause'}
+                        </Button>
+
+                        {/* Unstuck buttons */}
+                        <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg border border-slate-600">
+                          <span className="text-sm text-slate-400">Unstuck:</span>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              base44.entities.Tournament.update(tournament.id, {
+                                current_match: {
+                                  ...tournament.current_match,
+                                  bot1_unstuck: !tournament.current_match.bot1_unstuck
+                                }
+                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                            }}
+                            className={`h-7 text-xs ${tournament.current_match.bot1_unstuck ? 'bg-yellow-600' : 'bg-slate-700'}`}
+                          >
+                            {bots.find(b => b.id === tournament.current_match.bot1_id)?.name}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              base44.entities.Tournament.update(tournament.id, {
+                                current_match: {
+                                  ...tournament.current_match,
+                                  bot2_unstuck: !tournament.current_match.bot2_unstuck
+                                }
+                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                            }}
+                            className={`h-7 text-xs ${tournament.current_match.bot2_unstuck ? 'bg-yellow-600' : 'bg-slate-700'}`}
+                          >
+                            {bots.find(b => b.id === tournament.current_match.bot2_id)?.name}
+                          </Button>
+                        </div>
+
                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg border border-slate-600">
                           <span className="text-sm text-slate-400">Select Winner:</span>
                           <Button

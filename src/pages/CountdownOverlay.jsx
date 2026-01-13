@@ -37,6 +37,13 @@ export default function CountdownOverlay() {
       return;
     }
 
+    // Don't update timer if paused
+    if (tournament.is_paused) {
+      setTimeLeft(tournament.paused_time_remaining || 0);
+      setIsUrgent(tournament.paused_time_remaining <= 30);
+      return;
+    }
+
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
@@ -48,7 +55,7 @@ export default function CountdownOverlay() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [tournament?.countdown_end]);
+  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -429,7 +436,12 @@ export default function CountdownOverlay() {
                 <img src={bot1.image_url} alt={bot1.name} className="w-24 h-24 rounded-lg object-cover border-2 border-cyan-500/50" />
               )}
               <div>
-                <h3 className="text-2xl font-bold text-white uppercase">{bot1?.name || "TBD"}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold text-white uppercase">{bot1?.name || "TBD"}</h3>
+                  {tournament.current_match.bot1_unstuck && (
+                    <span className="px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded">UNSTUCK</span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-400">{bot1?.team_name}</p>
               </div>
             </div>
@@ -451,7 +463,12 @@ export default function CountdownOverlay() {
             {/* Bot 2 */}
             <div className="flex items-center gap-6 flex-1 justify-end">
               <div className="text-right">
-                <h3 className="text-2xl font-bold text-white uppercase">{bot2?.name || "TBD"}</h3>
+                <div className="flex items-center justify-end gap-2">
+                  {tournament.current_match.bot2_unstuck && (
+                    <span className="px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded">UNSTUCK</span>
+                  )}
+                  <h3 className="text-2xl font-bold text-white uppercase">{bot2?.name || "TBD"}</h3>
+                </div>
                 <p className="text-sm text-slate-400">{bot2?.team_name}</p>
               </div>
               {bot2?.image_url && (
