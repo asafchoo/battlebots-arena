@@ -200,7 +200,7 @@ export default function BracketOverlay() {
             <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
             <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/70 to-transparent" />
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1 h-full scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
             {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
               <div key={`w-${round}`} className="flex flex-col gap-1.5 min-w-[150px]">
                 <div className="text-[9px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
