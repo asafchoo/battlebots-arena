@@ -32,10 +32,10 @@ export default function BracketOverlay() {
 
   if (!tournament) {
     return (
-      <div className="fixed inset-0 w-screen h-screen bg-transparent flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
+      <div className="fixed inset-0 w-screen h-screen bg-slate-950 flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
         <style>{`
-          body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: transparent !important; }
-          html { overflow: hidden !important; background: transparent !important; }
+          body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #020617 !important; }
+          html { overflow: hidden !important; background: #020617 !important; }
           ::-webkit-scrollbar { display: none; }
         `}</style>
         <div className="text-cyan-500 text-3xl font-mono animate-pulse">
@@ -155,7 +155,7 @@ export default function BracketOverlay() {
   };
 
   return (
-    <div className={`fixed inset-0 w-screen h-screen bg-transparent p-4 font-mono text-white overflow-hidden ${
+    <div className={`fixed inset-0 w-screen h-screen bg-slate-950 p-4 font-mono text-white overflow-hidden ${
       glitchActive ? 'animate-pulse' : ''
     }`} style={{ width: '1920px', height: '1080px', margin: 0, padding: '16px' }}>
       <style>{`
@@ -163,11 +163,11 @@ export default function BracketOverlay() {
           margin: 0 !important; 
           padding: 0 !important; 
           overflow: hidden !important;
-          background: transparent !important;
+          background: #020617 !important;
         }
         html { 
           overflow: hidden !important;
-          background: transparent !important;
+          background: #020617 !important;
         }
         ::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; }
