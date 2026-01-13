@@ -153,7 +153,24 @@ export default function Home() {
           }
           return m;
         });
-        updates.winners_bracket = newWinners;
+        
+        // Advance winner to next round
+        const nextRound = round + 1;
+        const matchIndexInRound = match_number - 1; // 0-based index
+        const nextMatchNumber = Math.floor(matchIndexInRound / 2) + 1;
+        const isFirstSlot = matchIndexInRound % 2 === 0;
+        
+        const advancedWinners = newWinners.map(m => {
+          if (m.round === nextRound && m.match_number === nextMatchNumber) {
+            return {
+              ...m,
+              [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId
+            };
+          }
+          return m;
+        });
+        
+        updates.winners_bracket = advancedWinners;
         
         // Move loser to losers bracket
         const loserRound = round;
@@ -175,7 +192,45 @@ export default function Home() {
           }
           return m;
         });
-        updates.losers_bracket = newLosers;
+        
+        // Advance winner to next losers round or grand finals
+        const nextRound = round + 1;
+        const nextLoserMatch = tournament.losers_bracket.find(m => 
+          m.round === nextRound && !m.bot1_id && !m.bot2_id
+        );
+        
+        if (nextLoserMatch) {
+          updates.losers_bracket = newLosers.map(m => {
+            if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
+              return { ...m, bot1_id: winnerId };
+            }
+            return m;
+          });
+        } else {
+          // Check if this is the last losers match - advance to grand finals
+          const isLastLoserMatch = !tournament.losers_bracket.some(m => 
+            m.round > round && m.status !== 'complete'
+          );
+          if (isLastLoserMatch) {
+            updates.grand_finals = {
+              ...tournament.grand_finals,
+              bot2_id: winnerId
+            };
+            // Set bot1 from winners bracket final
+            const winnersFinalWinner = tournament.winners_bracket
+              .filter(m => m.status === 'complete')
+              .sort((a, b) => b.round - a.round)[0]?.winner_id;
+            if (winnersFinalWinner) {
+              updates.grand_finals.bot1_id = winnersFinalWinner;
+            }
+          } else {
+            updates.losers_bracket = newLosers;
+          }
+        }
+        
+        if (!updates.losers_bracket) {
+          updates.losers_bracket = newLosers;
+        }
         
         // Eliminate the loser
         await base44.entities.Bot.update(loserId, { status: 'eliminated' });
