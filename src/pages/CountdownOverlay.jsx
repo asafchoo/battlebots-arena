@@ -37,25 +37,27 @@ export default function CountdownOverlay() {
       return;
     }
 
-    // Don't update timer if paused
-    if (tournament.is_paused) {
-      setTimeLeft(tournament.paused_time_remaining || 0);
-      setIsUrgent(tournament.paused_time_remaining <= 30);
-      return;
-    }
-
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
       const diff = Math.max(0, Math.floor((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
+      
+      // Store paused time in database when paused
+      if (tournament.is_paused && tournament.paused_time_remaining !== diff) {
+        base44.entities.Tournament.update(tournament.id, {
+          paused_time_remaining: diff
+        });
+      }
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    
+    // Continue updating even when paused to keep paused_time_remaining in sync
+    const interval = setInterval(updateTimer, tournament.is_paused ? 5000 : 1000);
     return () => clearInterval(interval);
-  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining]);
+  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.id]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
