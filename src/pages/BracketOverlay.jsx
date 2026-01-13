@@ -32,10 +32,10 @@ export default function BracketOverlay() {
 
   if (!tournament) {
     return (
-      <div className="fixed inset-0 w-screen h-screen bg-slate-950 flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
+      <div className="fixed inset-0 w-screen h-screen bg-slate-800 flex items-center justify-center" style={{ width: '1920px', height: '1080px', margin: 0, padding: 0 }}>
         <style>{`
-          body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #020617 !important; }
-          html { overflow: hidden !important; background: #020617 !important; }
+          body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #1e293b !important; }
+          html { overflow: hidden !important; background: #1e293b !important; }
           ::-webkit-scrollbar { display: none; }
         `}</style>
         <div className="text-cyan-500 text-3xl font-mono animate-pulse">
@@ -155,7 +155,7 @@ export default function BracketOverlay() {
   };
 
   return (
-    <div className={`fixed inset-0 w-screen h-screen bg-slate-950 p-4 font-mono text-white overflow-hidden ${
+    <div className={`fixed inset-0 w-screen h-screen bg-slate-800 p-4 font-mono text-white overflow-auto ${
       glitchActive ? 'animate-pulse' : ''
     }`} style={{ width: '1920px', height: '1080px', margin: 0, padding: '16px' }}>
       <style>{`
@@ -163,11 +163,11 @@ export default function BracketOverlay() {
           margin: 0 !important; 
           padding: 0 !important; 
           overflow: hidden !important;
-          background: #020617 !important;
+          background: #1e293b !important;
         }
         html { 
           overflow: hidden !important;
-          background: #020617 !important;
+          background: #1e293b !important;
         }
         ::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; }
@@ -192,9 +192,9 @@ export default function BracketOverlay() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 h-[calc(100%-70px)] overflow-hidden">
+      <div className="flex flex-col gap-2 min-h-[calc(100%-70px)]">
         {/* Winners Bracket */}
-        <div className="space-y-1 h-[48%] overflow-hidden">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-cyan-300 text-sm">
             <Trophy className="w-4 h-4" />
             <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
@@ -222,13 +222,13 @@ export default function BracketOverlay() {
 
         {/* Losers Bracket */}
         {losers_bracket.length > 0 && (
-          <div className="space-y-1 h-[48%] overflow-hidden">
+          <div className="space-y-1 mt-2">
             <div className="flex items-center gap-2 text-red-300 text-sm">
               <Skull className="w-4 h-4" />
               <span className="tracking-widest font-bold text-xs">LOSERS BRACKET</span>
               <div className="flex-1 h-px bg-gradient-to-r from-red-400/70 to-transparent" />
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 h-full scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
               {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
                 <div key={`l-${round}`} className="flex flex-col gap-1.5 min-w-[150px]">
                   <div className="text-[9px] text-red-400/70 text-center uppercase tracking-wider font-bold">
@@ -251,7 +251,7 @@ export default function BracketOverlay() {
 
         {/* Grand Finals */}
         {grand_finals && (grand_finals.bot1_id || grand_finals.bot2_id) && (
-          <div className="space-y-1 absolute bottom-4 left-1/2 -translate-x-1/2">
+          <div className="space-y-1 mt-4 flex flex-col items-center">
             <div className="flex items-center justify-center gap-2 text-yellow-300 text-sm">
               <Trophy className="w-4 h-4" />
               <span className="tracking-widest font-bold text-[10px]">GRAND FINALS</span>
