@@ -110,12 +110,12 @@ export default function BracketOverlay() {
           } animate-pulse`} />
         )}
         
-        <div className={`relative p-1 rounded-lg border backdrop-blur-sm ${
+        <div className={`relative p-1 rounded-lg border backdrop-blur-md ${
           isActive 
-            ? 'bg-cyan-800/60 border-cyan-300 shadow-lg shadow-cyan-500/40' 
+            ? 'bg-cyan-900/90 border-cyan-300 shadow-lg shadow-cyan-500/40' 
             : isNext
-              ? 'bg-yellow-800/50 border-yellow-400'
-              : 'bg-slate-800/50 border-slate-600'
+              ? 'bg-yellow-900/85 border-yellow-400'
+              : 'bg-slate-900/85 border-slate-500'
         }`}>
           {isActive && (
             <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-black rounded animate-pulse shadow-lg shadow-red-500/50">
@@ -132,10 +132,10 @@ export default function BracketOverlay() {
           {/* Bot 1 */}
           <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
             match.winner_id === match.bot1_id 
-              ? 'bg-green-500/40 text-green-200 border border-green-400' 
+              ? 'bg-green-600/70 text-green-100 border border-green-400' 
               : match.winner_id 
-                ? 'text-slate-500 line-through opacity-60' 
-                : 'text-slate-200 bg-slate-700/30'
+                ? 'text-slate-400 line-through opacity-60' 
+                : 'text-white bg-slate-700/60'
           }`}>
             {bot1?.image_url && (
               <img src={bot1.image_url} className="w-3 h-3 rounded object-cover" alt="" />
@@ -148,10 +148,10 @@ export default function BracketOverlay() {
           {/* Bot 2 */}
           <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
             match.winner_id === match.bot2_id 
-              ? 'bg-green-500/40 text-green-200 border border-green-400' 
+              ? 'bg-green-600/70 text-green-100 border border-green-400' 
               : match.winner_id 
-                ? 'text-slate-500 line-through opacity-60' 
-                : 'text-slate-200 bg-slate-700/30'
+                ? 'text-slate-400 line-through opacity-60' 
+                : 'text-white bg-slate-700/60'
           }`}>
             {bot2?.image_url && (
               <img src={bot2.image_url} className="w-3 h-3 rounded object-cover" alt="" />
@@ -164,7 +164,7 @@ export default function BracketOverlay() {
   };
 
   return (
-    <div className={`fixed inset-0 w-screen h-screen bg-slate-800 p-4 font-mono text-white overflow-auto ${
+    <div className={`fixed inset-0 w-screen h-screen p-4 font-mono text-white overflow-auto ${
       glitchActive ? 'animate-pulse' : ''
     }`}>
       <style>{`
@@ -172,26 +172,31 @@ export default function BracketOverlay() {
           margin: 0 !important; 
           padding: 0 !important; 
           overflow: hidden !important;
-          background: #1e293b !important;
+          background: #000 !important;
         }
         html { 
           overflow: hidden !important;
-          background: #1e293b !important;
+          background: #000 !important;
         }
         ::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
       
+      {/* Background Image */}
+      <div className="fixed inset-0 z-0">
+        <img 
+          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696571612acba2d4bc583a5b/44d2fbb31_SponsorsABattlebot.png" 
+          alt="Background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
+      
       {/* Scanline effect */}
       <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] z-50" />
-      
-      {/* Grid background */}
-      <div className="fixed inset-0 pointer-events-none opacity-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,cyan_1px,transparent_1px),linear-gradient(to_bottom,cyan_1px,transparent_1px)] bg-[size:40px_40px]" />
-      </div>
 
-      <div className="flex flex-col gap-3 h-full items-center justify-center">
+      <div className="relative z-10 flex flex-col gap-3 h-full items-center justify-center">
         {/* Winners Bracket */}
         {showBracket === 'winners' && (
           <div className="space-y-1 w-full">
@@ -271,10 +276,10 @@ export default function BracketOverlay() {
       </div>
 
       {/* Decorative corners */}
-      <div className="fixed top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-cyan-400/70" />
-      <div className="fixed top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-cyan-400/70" />
-      <div className="fixed bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-purple-400/70" />
-      <div className="fixed bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-purple-400/70" />
+      <div className="fixed top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-cyan-400/70 z-10" />
+      <div className="fixed top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-cyan-400/70 z-10" />
+      <div className="fixed bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-purple-400/70 z-10" />
+      <div className="fixed bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-purple-400/70 z-10" />
     </div>
   );
 }
