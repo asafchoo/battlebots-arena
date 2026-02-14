@@ -1,5 +1,7 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
 /**
- * GET /api/fight/state
+ * GET /functions/getFightState
  * Returns current fight state for ESP32 polling
  * 
  * Response format:
@@ -11,9 +13,7 @@
  * }
  */
 
-export default async function getFightState(request, context) {
-  const { base44 } = context;
-  
+Deno.serve(async (req) => {
   // Set CORS headers for local network access
   const headers = {
     'Content-Type': 'application/json',
@@ -23,23 +23,25 @@ export default async function getFightState(request, context) {
   };
 
   // Handle OPTIONS preflight
-  if (request.method === 'OPTIONS') {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers });
   }
 
   try {
-    // Get latest tournament
+    const base44 = createClientFromRequest(req);
+    
+    // Get latest tournament (using service role to bypass auth for ESP32)
     const tournaments = await base44.asServiceRole.entities.Tournament.list('-created_date', 1);
     const tournament = tournaments[0];
 
     // No active tournament or match
     if (!tournament || !tournament.current_match) {
-      return new Response(JSON.stringify({
+      return Response.json({
         state: "stopped",
         elapsed_ms: 0,
         match_id: null,
         duration_ms: 240000
-      }), { status: 200, headers });
+      }, { headers });
     }
 
     const { current_match, countdown_end, is_paused, paused_time_remaining } = tournament;
@@ -68,27 +70,21 @@ export default async function getFightState(request, context) {
       }
     }
 
-    return new Response(JSON.stringify({
+    return Response.json({
       state,
       elapsed_ms,
       match_id: matchId,
       duration_ms: 240000
-    }), { status: 200, headers });
+    }, { headers });
 
   } catch (error) {
     console.error('Error in getFightState:', error);
-    return new Response(JSON.stringify({
+    return Response.json({
       error: 'Internal server error',
       message: error.message
-    }), { 
+    }, { 
       status: 500, 
       headers 
     });
   }
-}
-
-export const config = {
-  path: '/api/fight/state',
-  method: 'GET',
-  public: true // No authentication required for ESP32 access
-};
+});
