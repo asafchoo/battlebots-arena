@@ -156,12 +156,19 @@ export default function Home() {
         
         // Advance winner to next round
         const nextRound = round + 1;
-        const matchIndexInRound = match_number - 1; // 0-based index
-        const nextMatchNumber = Math.floor(matchIndexInRound / 2) + 1;
+        // Find the index of this match within its round (0-based)
+        const matchesInCurrentRound = newWinners.filter(m => m.round === round);
+        const currentMatchInRound = matchesInCurrentRound.find(m => m.match_number === match_number);
+        const matchIndexInRound = matchesInCurrentRound.indexOf(currentMatchInRound);
+        
+        // Calculate which match in next round and which slot
+        const matchesInNextRound = newWinners.filter(m => m.round === nextRound);
+        const nextMatchIndex = Math.floor(matchIndexInRound / 2);
+        const nextMatch = matchesInNextRound[nextMatchIndex];
         const isFirstSlot = matchIndexInRound % 2 === 0;
         
         const advancedWinners = newWinners.map(m => {
-          if (m.round === nextRound && m.match_number === nextMatchNumber) {
+          if (nextMatch && m.round === nextRound && m.match_number === nextMatch.match_number) {
             return {
               ...m,
               [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId
