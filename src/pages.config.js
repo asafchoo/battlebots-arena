@@ -50,6 +50,7 @@
 import BracketOverlay from './pages/BracketOverlay';
 import CountdownOverlay from './pages/CountdownOverlay';
 import Home from './pages/Home';
+import FightState from './pages/FightState';
 import __Layout from './Layout.jsx';
 
 
@@ -57,6 +58,7 @@ export const PAGES = {
     "BracketOverlay": BracketOverlay,
     "CountdownOverlay": CountdownOverlay,
     "Home": Home,
+    "FightState": FightState,
 }
 
 export const pagesConfig = {
