@@ -157,9 +157,8 @@ export default function Home() {
         // Advance winner to next round
         const nextRound = round + 1;
         // Find the index of this match within its round (0-based)
-        const matchesInCurrentRound = newWinners.filter(m => m.round === round);
-        const currentMatchInRound = matchesInCurrentRound.find(m => m.match_number === match_number);
-        const matchIndexInRound = matchesInCurrentRound.indexOf(currentMatchInRound);
+        const matchesInCurrentRound = newWinners.filter(m => m.round === round).sort((a, b) => a.match_number - b.match_number);
+        const matchIndexInRound = matchesInCurrentRound.findIndex(m => m.match_number === match_number);
         
         console.log('=== WINNERS BRACKET ADVANCEMENT ===');
         console.log('Current match:', { round, match_number, winnerId, loserId });
@@ -167,7 +166,7 @@ export default function Home() {
         console.log('Match index in round:', matchIndexInRound);
         
         // Calculate which match in next round and which slot
-        const matchesInNextRound = newWinners.filter(m => m.round === nextRound);
+        const matchesInNextRound = newWinners.filter(m => m.round === nextRound).sort((a, b) => a.match_number - b.match_number);
         const nextMatchIndex = Math.floor(matchIndexInRound / 2);
         const nextMatch = matchesInNextRound[nextMatchIndex];
         const isFirstSlot = matchIndexInRound % 2 === 0;
