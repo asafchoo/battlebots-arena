@@ -316,6 +316,8 @@ export default function Home() {
   });
 
   const startNextMatch = () => {
+    if (!tournament) return;
+    
     // Find next pending match with both bots
     const allMatches = [
       ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
@@ -327,7 +329,13 @@ export default function Home() {
     );
     
     if (nextMatch) {
-      setCurrentMatchMutation.mutate(nextMatch);
+      setCurrentMatchMutation.mutate({
+        bracket: nextMatch.bracket,
+        round: nextMatch.round,
+        match_number: nextMatch.match_number,
+        bot1_id: nextMatch.bot1_id,
+        bot2_id: nextMatch.bot2_id
+      });
     } else if (tournament.grand_finals?.bot1_id && tournament.grand_finals?.bot2_id && !tournament.grand_finals?.winner_id) {
       setCurrentMatchMutation.mutate({
         bracket: 'finals',
@@ -458,65 +466,25 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">Registered Bots</h2>
               <div className="flex gap-3">
-                <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset Tournament
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-slate-900 border-slate-700">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Reset Tournament</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <div className="flex items-center gap-2 p-3 bg-red-950 rounded-lg border border-red-800">
-                        <AlertCircle className="w-5 h-5 text-red-400" />
-                        <span className="text-sm text-red-300">
-                          This will reset all battles and tournament progress!
-                        </span>
-                      </div>
-                      <div>
-                        <label className="text-sm text-slate-400">Enter Password</label>
-                        <Input 
-                          type="password"
-                          value={resetPassword}
-                          onChange={(e) => setResetPassword(e.target.value)}
-                          placeholder="battlebot + date (ddmmyy)"
-                          className="bg-slate-800 border-slate-600 text-white mt-1"
-                          onKeyDown={(e) => e.key === 'Enter' && handleResetConfirm()}
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleResetConfirm}
-                        disabled={resetTournamentMutation.isPending || !resetPassword}
-                        className="w-full bg-red-600 hover:bg-red-700"
-                      >
-                        {resetTournamentMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : null}
-                        Confirm Reset
+                {(!tournament || tournament.status !== 'in_progress') && (
+                  <Dialog open={showRegForm} onOpenChange={setShowRegForm}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Register Bot
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Dialog open={showRegForm} onOpenChange={setShowRegForm}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-cyan-500 to-purple-600">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Register Bot
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-slate-900 border-slate-700 max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Register New Bot</DialogTitle>
-                    </DialogHeader>
-                    <BotRegistrationForm onSuccess={() => {
-                      setShowRegForm(false);
-                      queryClient.invalidateQueries({ queryKey: ['bots'] });
-                    }} />
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent className="bg-slate-900 border-slate-700 max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Register New Bot</DialogTitle>
+                      </DialogHeader>
+                      <BotRegistrationForm onSuccess={() => {
+                        setShowRegForm(false);
+                        queryClient.invalidateQueries({ queryKey: ['bots'] });
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                )}
 
                 {bots.length >= 2 && (!tournament || tournament.status === 'completed') && (
                   <Dialog>
@@ -579,11 +547,71 @@ export default function Home() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {bots.map(bot => (
-                  <BotCard key={bot.id} bot={bot} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {bots.map(bot => (
+                    <BotCard key={bot.id} bot={bot} />
+                  ))}
+                </div>
+                
+                {tournament && (
+                  <div className="mt-8 pt-8 border-t border-slate-700">
+                    <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700">
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Reset Tournament
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-slate-900 border-slate-700">
+                        <DialogHeader>
+                          <DialogTitle className="text-white text-xl">⚠️ Reset Tournament</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-4">
+                          <div className="flex items-start gap-3 p-4 bg-red-950 rounded-lg border-2 border-red-800">
+                            <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                            <div className="space-y-2">
+                              <p className="text-red-300 font-semibold">This action cannot be undone!</p>
+                              <p className="text-sm text-red-400">
+                                This will permanently delete:
+                              </p>
+                              <ul className="text-sm text-red-400 list-disc list-inside space-y-1">
+                                <li>All tournament progress and results</li>
+                                <li>All match history</li>
+                                <li>Current bracket structure</li>
+                              </ul>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm text-slate-400 font-semibold">Enter Password to Confirm</label>
+                            <Input 
+                              type="password"
+                              value={resetPassword}
+                              onChange={(e) => setResetPassword(e.target.value)}
+                              placeholder="battlebot + date (ddmmyy)"
+                              className="bg-slate-800 border-slate-600 text-white mt-2"
+                              onKeyDown={(e) => e.key === 'Enter' && handleResetConfirm()}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">
+                              Format: battlebot + today's date (e.g., battlebot150225)
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={handleResetConfirm}
+                            disabled={resetTournamentMutation.isPending || !resetPassword}
+                            className="w-full bg-red-600 hover:bg-red-700"
+                          >
+                            {resetTournamentMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            Yes, Reset Everything
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 
