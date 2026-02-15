@@ -357,6 +357,19 @@ export default function Home() {
     const pendingMatches = allMatches.filter(m => m.status === 'pending');
     console.log('Pending matches:', pendingMatches);
     
+    // Log each pending match details
+    pendingMatches.forEach((m, i) => {
+      console.log(`Pending match ${i}:`, {
+        bracket: m.bracket,
+        round: m.round,
+        match_number: m.match_number,
+        bot1_id: m.bot1_id,
+        bot2_id: m.bot2_id,
+        status: m.status,
+        hasBothBots: !!(m.bot1_id && m.bot2_id)
+      });
+    });
+    
     // Find matches with both bots
     const readyMatches = pendingMatches.filter(m => m.bot1_id && m.bot2_id);
     console.log('Ready matches (with both bots):', readyMatches);
