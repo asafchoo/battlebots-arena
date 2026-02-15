@@ -1,9 +1,20 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Swords, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Swords, Users, X } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function BotCard({ bot, onClick, selected }) {
+  const queryClient = useQueryClient();
+
+  const deleteBotMutation = useMutation({
+    mutationFn: () => base44.entities.Bot.delete(bot.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bots'] });
+    }
+  });
   return (
     <Card 
       className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden ${
@@ -11,6 +22,19 @@ export default function BotCard({ bot, onClick, selected }) {
       }`}
       onClick={onClick}
     >
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirm(`Delete ${bot.name}?`)) {
+            deleteBotMutation.mutate();
+          }
+        }}
+        className="absolute top-2 left-2 z-10 h-7 w-7 bg-red-500/90 hover:bg-red-600 text-white"
+      >
+        <X className="w-4 h-4" />
+      </Button>
       <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800">
         {bot.image_url ? (
           <img 
