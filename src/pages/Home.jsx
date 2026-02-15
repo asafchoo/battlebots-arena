@@ -179,15 +179,19 @@ export default function Home() {
         
         updates.winners_bracket = advancedWinners;
         
-        // Move loser to losers bracket
+        // Move loser to losers bracket - first check if bot2_id exists
         const loserRound = round;
         const targetLoserMatch = tournament.losers_bracket.find(m => 
-          m.round === loserRound && !m.bot1_id
+          m.round === loserRound && (!m.bot1_id || !m.bot2_id)
         );
         if (targetLoserMatch) {
           updates.losers_bracket = tournament.losers_bracket.map(m => {
             if (m.round === targetLoserMatch.round && m.match_number === targetLoserMatch.match_number) {
-              return { ...m, bot1_id: loserId };
+              if (!m.bot1_id) {
+                return { ...m, bot1_id: loserId };
+              } else if (!m.bot2_id) {
+                return { ...m, bot2_id: loserId };
+              }
             }
             return m;
           });
