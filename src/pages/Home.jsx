@@ -161,14 +161,35 @@ export default function Home() {
         const currentMatchInRound = matchesInCurrentRound.find(m => m.match_number === match_number);
         const matchIndexInRound = matchesInCurrentRound.indexOf(currentMatchInRound);
         
+        console.log('Advancing winner:', {
+          winnerId,
+          round,
+          match_number,
+          matchIndexInRound,
+          currentRoundMatches: matchesInCurrentRound.length
+        });
+        
         // Calculate which match in next round and which slot
         const matchesInNextRound = newWinners.filter(m => m.round === nextRound);
         const nextMatchIndex = Math.floor(matchIndexInRound / 2);
         const nextMatch = matchesInNextRound[nextMatchIndex];
         const isFirstSlot = matchIndexInRound % 2 === 0;
         
+        console.log('Next match info:', {
+          nextRound,
+          nextMatchIndex,
+          nextMatch,
+          isFirstSlot,
+          nextRoundMatches: matchesInNextRound.length
+        });
+        
         const advancedWinners = newWinners.map(m => {
           if (nextMatch && m.round === nextRound && m.match_number === nextMatch.match_number) {
+            console.log('Updating next match:', {
+              match_number: m.match_number,
+              slot: isFirstSlot ? 'bot1_id' : 'bot2_id',
+              winnerId
+            });
             return {
               ...m,
               [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId
@@ -328,11 +349,16 @@ export default function Home() {
       ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' }))
     ];
     
+    console.log('Looking for next match. All matches:', allMatches);
+    
     const nextMatch = allMatches.find(m => 
       m.status === 'pending' && m.bot1_id && m.bot2_id
     );
     
+    console.log('Next match found:', nextMatch);
+    
     if (nextMatch) {
+      console.log('Starting match:', nextMatch);
       setCurrentMatchMutation.mutate({
         bracket: nextMatch.bracket,
         round: nextMatch.round,
@@ -341,6 +367,7 @@ export default function Home() {
         bot2_id: nextMatch.bot2_id
       });
     } else if (tournament.grand_finals?.bot1_id && tournament.grand_finals?.bot2_id && !tournament.grand_finals?.winner_id) {
+      console.log('Starting grand finals');
       setCurrentMatchMutation.mutate({
         bracket: 'finals',
         round: 0,
@@ -348,6 +375,8 @@ export default function Home() {
         bot1_id: tournament.grand_finals.bot1_id,
         bot2_id: tournament.grand_finals.bot2_id
       });
+    } else {
+      console.log('No match available to start');
     }
   };
 
