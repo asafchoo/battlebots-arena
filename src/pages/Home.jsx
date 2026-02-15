@@ -350,10 +350,18 @@ export default function Home() {
     ];
     
     console.log('Looking for next match. All matches:', allMatches);
+    console.log('Winners bracket:', tournament.winners_bracket);
+    console.log('Losers bracket:', tournament.losers_bracket);
     
-    const nextMatch = allMatches.find(m => 
-      m.status === 'pending' && m.bot1_id && m.bot2_id
-    );
+    // Find pending matches
+    const pendingMatches = allMatches.filter(m => m.status === 'pending');
+    console.log('Pending matches:', pendingMatches);
+    
+    // Find matches with both bots
+    const readyMatches = pendingMatches.filter(m => m.bot1_id && m.bot2_id);
+    console.log('Ready matches (with both bots):', readyMatches);
+    
+    const nextMatch = readyMatches[0];
     
     console.log('Next match found:', nextMatch);
     
@@ -376,7 +384,7 @@ export default function Home() {
         bot2_id: tournament.grand_finals.bot2_id
       });
     } else {
-      console.log('No match available to start');
+      console.log('No match available to start. Pending matches:', pendingMatches.length);
     }
   };
 
