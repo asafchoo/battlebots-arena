@@ -161,13 +161,10 @@ export default function Home() {
         const currentMatchInRound = matchesInCurrentRound.find(m => m.match_number === match_number);
         const matchIndexInRound = matchesInCurrentRound.indexOf(currentMatchInRound);
         
-        console.log('Advancing winner:', {
-          winnerId,
-          round,
-          match_number,
-          matchIndexInRound,
-          currentRoundMatches: matchesInCurrentRound.length
-        });
+        console.log('=== WINNERS BRACKET ADVANCEMENT ===');
+        console.log('Current match:', { round, match_number, winnerId, loserId });
+        console.log('Matches in current round:', matchesInCurrentRound.map(m => ({ round: m.round, match_number: m.match_number })));
+        console.log('Match index in round:', matchIndexInRound);
         
         // Calculate which match in next round and which slot
         const matchesInNextRound = newWinners.filter(m => m.round === nextRound);
@@ -175,21 +172,14 @@ export default function Home() {
         const nextMatch = matchesInNextRound[nextMatchIndex];
         const isFirstSlot = matchIndexInRound % 2 === 0;
         
-        console.log('Next match info:', {
-          nextRound,
-          nextMatchIndex,
-          nextMatch,
-          isFirstSlot,
-          nextRoundMatches: matchesInNextRound.length
-        });
+        console.log('Next round matches:', matchesInNextRound.map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
+        console.log('Next match index:', nextMatchIndex);
+        console.log('Next match:', nextMatch);
+        console.log('Is first slot:', isFirstSlot);
         
         const advancedWinners = newWinners.map(m => {
           if (nextMatch && m.round === nextRound && m.match_number === nextMatch.match_number) {
-            console.log('Updating next match:', {
-              match_number: m.match_number,
-              slot: isFirstSlot ? 'bot1_id' : 'bot2_id',
-              winnerId
-            });
+            console.log('✓ Updating match', m.match_number, 'in round', nextRound, 'with winner', winnerId, 'in slot', isFirstSlot ? 'bot1' : 'bot2');
             return {
               ...m,
               [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId
@@ -198,24 +188,35 @@ export default function Home() {
           return m;
         });
         
+        console.log('Advanced winners bracket:', advancedWinners.filter(m => m.round === nextRound).map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
+        
         updates.winners_bracket = advancedWinners;
         
         // Move loser to losers bracket - first check if bot2_id exists
         const loserRound = round;
+        console.log('=== LOSERS BRACKET PLACEMENT ===');
+        console.log('Looking for loser slot in round:', loserRound);
         const targetLoserMatch = tournament.losers_bracket.find(m => 
           m.round === loserRound && (!m.bot1_id || !m.bot2_id)
         );
+        console.log('Target loser match:', targetLoserMatch);
+        
         if (targetLoserMatch) {
           updates.losers_bracket = tournament.losers_bracket.map(m => {
             if (m.round === targetLoserMatch.round && m.match_number === targetLoserMatch.match_number) {
               if (!m.bot1_id) {
+                console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot1');
                 return { ...m, bot1_id: loserId };
               } else if (!m.bot2_id) {
+                console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot2');
                 return { ...m, bot2_id: loserId };
               }
             }
             return m;
           });
+          console.log('Updated losers bracket R1:', updates.losers_bracket.filter(m => m.round === 1).map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
+        } else {
+          console.log('⚠️ No target loser match found!');
         }
       } else if (bracket === 'losers') {
         const newLosers = tournament.losers_bracket.map(m => {
