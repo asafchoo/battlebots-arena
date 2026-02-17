@@ -196,7 +196,10 @@ export default function Home() {
         console.log('=== LOSERS BRACKET PLACEMENT ===');
         console.log('Looking for loser slot in round:', loserRound);
         const targetLoserMatch = tournament.losers_bracket.find(m => 
-          m.round === loserRound && (!m.bot1_id || !m.bot2_id)
+          m.round === loserRound && 
+          (!m.bot1_id || !m.bot2_id) &&
+          m.bot1_id !== loserId && 
+          m.bot2_id !== loserId
         );
         console.log('Target loser match:', targetLoserMatch);
         
@@ -206,7 +209,7 @@ export default function Home() {
               if (!m.bot1_id) {
                 console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot1');
                 return { ...m, bot1_id: loserId };
-              } else if (!m.bot2_id) {
+              } else if (!m.bot2_id && m.bot1_id !== loserId) {
                 console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot2');
                 return { ...m, bot2_id: loserId };
               }
