@@ -34,8 +34,14 @@ Deno.serve(async (req) => {
     const tournaments = await base44.asServiceRole.entities.Tournament.list('-created_date', 1);
     const tournament = tournaments[0];
 
+    console.log('Tournament found:', !!tournament);
+    console.log('Current match:', tournament?.current_match);
+    console.log('Countdown end:', tournament?.countdown_end);
+    console.log('Is paused:', tournament?.is_paused);
+
     // No active tournament or match
     if (!tournament || !tournament.current_match) {
+      console.log('Returning stopped state - no active match');
       return Response.json({
         state: "stopped",
         elapsed_ms: 0,
@@ -70,6 +76,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log('Returning state:', state, 'elapsed_ms:', elapsed_ms, 'match_id:', matchId);
+    
     return Response.json({
       state,
       elapsed_ms,
