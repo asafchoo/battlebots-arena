@@ -49,33 +49,56 @@ export default function Home() {
       const shuffledBots = [...bots].sort(() => Math.random() - 0.5);
       const numBots = shuffledBots.length;
       
-      // Calculate rounds needed
+      // Calculate next power of 2
       const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(numBots)));
-      const byes = nextPowerOf2 - numBots;
+      const numByes = nextPowerOf2 - numBots;
       
-      // Build winners bracket
+      console.log(`Creating tournament for ${numBots} bots (${nextPowerOf2} bracket, ${numByes} BYEs)`);
+      
+      // Build winners bracket with proper BYE handling
       const winners_bracket = [];
       let matchNum = 1;
       
-      // First round with byes
+      // Round 1 - pair bots and assign BYEs
       const round1Matches = nextPowerOf2 / 2;
-      let botIndex = 0;
+      const botsWithByes = [...shuffledBots];
       
+      // Add virtual BYE placeholders
+      for (let i = 0; i < numByes; i++) {
+        botsWithByes.push(null); // null = BYE
+      }
+      
+      // Shuffle again to distribute BYEs randomly
+      const shuffledWithByes = [...botsWithByes].sort(() => Math.random() - 0.5);
+      
+      // Create R1 matches
       for (let i = 0; i < round1Matches; i++) {
-        const bot1 = shuffledBots[botIndex++];
-        const bot2 = botIndex < numBots ? shuffledBots[botIndex++] : null;
+        const bot1 = shuffledWithByes[i * 2];
+        const bot2 = shuffledWithByes[i * 2 + 1];
+        
+        // Determine winner if there's a BYE
+        let winner_id = null;
+        let status = 'pending';
+        
+        if (!bot1 && bot2) {
+          winner_id = bot2.id;
+          status = 'complete';
+        } else if (bot1 && !bot2) {
+          winner_id = bot1.id;
+          status = 'complete';
+        }
         
         winners_bracket.push({
           round: 1,
           match_number: matchNum++,
           bot1_id: bot1?.id || null,
           bot2_id: bot2?.id || null,
-          winner_id: bot2 ? null : bot1?.id, // Auto-win for bye
-          status: bot2 ? 'pending' : 'complete'
+          winner_id,
+          status
         });
       }
 
-      // Generate subsequent winner rounds
+      // Generate subsequent winner rounds (empty, will be filled as matches complete)
       let prevRoundMatches = round1Matches;
       let currentRound = 2;
       while (prevRoundMatches > 1) {
@@ -94,13 +117,26 @@ export default function Home() {
         currentRound++;
       }
 
-      // Build losers bracket (simplified - will be populated as matches complete)
+      // Build losers bracket structure
       const losers_bracket = [];
-      const losersRounds = (currentRound - 1) * 2 - 1;
+      const totalWinnerRounds = currentRound - 1;
+      const losersRounds = totalWinnerRounds * 2 - 1;
       let losersMatchNum = 1;
       
+      // Losers bracket has alternating structure
       for (let r = 1; r <= losersRounds; r++) {
-        const matchesInRound = Math.max(1, Math.floor(round1Matches / Math.pow(2, Math.ceil(r / 2))));
+        let matchesInRound;
+        if (r === 1) {
+          // First losers round gets half of R1 losers
+          matchesInRound = Math.floor(round1Matches / 2);
+        } else if (r % 2 === 1) {
+          // Odd rounds (after R1): winners from previous LB round fight each other
+          matchesInRound = Math.ceil(matchesInRound / 2);
+        } else {
+          // Even rounds: new WB losers join
+          matchesInRound = matchesInRound;
+        }
+        
         for (let m = 0; m < matchesInRound; m++) {
           losers_bracket.push({
             round: r,
