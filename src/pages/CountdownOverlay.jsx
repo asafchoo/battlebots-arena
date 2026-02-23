@@ -8,6 +8,7 @@ export default function CountdownOverlay() {
   const [timeLeft, setTimeLeft] = useState(180);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
+  const [blinkVisible, setBlinkVisible] = useState(true);
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
@@ -21,6 +22,16 @@ export default function CountdownOverlay() {
   });
 
   const tournament = tournaments[0];
+
+  // Blink the timer when paused (0.5s on / 0.5s off)
+  useEffect(() => {
+    if (!tournament?.is_paused) {
+      setBlinkVisible(true);
+      return;
+    }
+    const interval = setInterval(() => setBlinkVisible(v => !v), 500);
+    return () => clearInterval(interval);
+  }, [tournament?.is_paused]);
 
   // Transition to compact mode after 3 seconds
   useEffect(() => {
@@ -403,14 +414,14 @@ export default function CountdownOverlay() {
                 className="mt-12 text-center"
               >
                 <div className={`text-[140px] font-black tabular-nums transition-colors duration-500 leading-none ${
-                  isUrgent 
-                    ? 'text-red-500 animate-pulse' 
+                  isUrgent
+                    ? 'text-red-500'
                     : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
-                }`}>
+                }`} style={{ opacity: blinkVisible ? 1 : 0, transition: 'opacity 0.05s' }}>
                   {formatTime(timeLeft)}
                 </div>
                 <div className="text-base text-slate-500 tracking-[0.5em] uppercase mt-4 font-bold">
-                  {timeLeft === 0 ? 'TIME!' : 'Remaining'}
+                  {tournament?.is_paused ? 'PAUSED' : timeLeft === 0 ? 'TIME!' : 'Remaining'}
                 </div>
               </motion.div>
             </div>
@@ -462,8 +473,8 @@ export default function CountdownOverlay() {
                 <Swords className={`w-8 h-8 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
               </div>
               <div className={`text-7xl font-black tabular-nums ${
-                isUrgent ? 'text-red-500 animate-pulse' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
-              }`}>
+                isUrgent ? 'text-red-500' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
+              }`} style={{ opacity: blinkVisible ? 1 : 0, transition: 'opacity 0.05s' }}>
                 {formatTime(timeLeft)}
               </div>
             </div>
