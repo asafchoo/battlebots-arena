@@ -12,8 +12,8 @@ import { createPageUrl } from "@/utils";
 import BotCard from "@/components/bots/BotCard";
 import BotRegistrationForm from "@/components/bots/BotRegistrationForm";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
-import { 
-  Plus, Play, Trophy, Users, Swords, ExternalLink, 
+import {
+  Plus, Trophy, Users, Swords, ExternalLink,
   Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw
 } from "lucide-react";
 
@@ -346,100 +346,6 @@ export default function Home() {
     }
   });
 
-  const setCurrentMatchMutation = useMutation({
-    mutationFn: async ({ bracket, round, match_number, bot1_id, bot2_id }) => {
-      let updates = { 
-        current_match: { bracket, round, match_number, bot1_id, bot2_id },
-        countdown_end: new Date(Date.now() + 3 * 60 * 1000).toISOString()
-      };
-      
-      // Update match status
-      if (bracket === 'winners') {
-        updates.winners_bracket = tournament.winners_bracket.map(m => {
-          if (m.round === round && m.match_number === match_number) {
-            return { ...m, status: 'in_progress' };
-          }
-          return m;
-        });
-      } else if (bracket === 'losers') {
-        updates.losers_bracket = tournament.losers_bracket.map(m => {
-          if (m.round === round && m.match_number === match_number) {
-            return { ...m, status: 'in_progress' };
-          }
-          return m;
-        });
-      } else if (bracket === 'finals') {
-        updates.grand_finals = { ...tournament.grand_finals, status: 'in_progress' };
-      }
-
-      await base44.entities.Tournament.update(tournament.id, updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-    }
-  });
-
-  const startNextMatch = () => {
-    if (!tournament) return;
-    
-    // Find next pending match with both bots
-    const allMatches = [
-      ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
-      ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' }))
-    ];
-    
-    console.log('Looking for next match. All matches:', allMatches);
-    console.log('Winners bracket:', tournament.winners_bracket);
-    console.log('Losers bracket:', tournament.losers_bracket);
-    
-    // Find pending matches
-    const pendingMatches = allMatches.filter(m => m.status === 'pending');
-    console.log('Pending matches:', pendingMatches);
-    
-    // Log each pending match details
-    pendingMatches.forEach((m, i) => {
-      console.log(`Pending match ${i}:`, {
-        bracket: m.bracket,
-        round: m.round,
-        match_number: m.match_number,
-        bot1_id: m.bot1_id,
-        bot2_id: m.bot2_id,
-        status: m.status,
-        hasBothBots: !!(m.bot1_id && m.bot2_id)
-      });
-    });
-    
-    // Find matches with both bots
-    const readyMatches = pendingMatches.filter(m => m.bot1_id && m.bot2_id);
-    console.log('Ready matches (with both bots):', readyMatches);
-    
-    const nextMatch = readyMatches[0];
-    
-    console.log('Next match found:', nextMatch);
-    
-    if (nextMatch) {
-      console.log('Starting match:', nextMatch);
-      setCurrentMatchMutation.mutate({
-        bracket: nextMatch.bracket,
-        round: nextMatch.round,
-        match_number: nextMatch.match_number,
-        bot1_id: nextMatch.bot1_id,
-        bot2_id: nextMatch.bot2_id
-      });
-    } else if (tournament.grand_finals?.bot1_id && tournament.grand_finals?.bot2_id && !tournament.grand_finals?.winner_id) {
-      console.log('Starting grand finals');
-      setCurrentMatchMutation.mutate({
-        bracket: 'finals',
-        round: 0,
-        match_number: 0,
-        bot1_id: tournament.grand_finals.bot1_id,
-        bot2_id: tournament.grand_finals.bot2_id
-      });
-    } else {
-      console.log('No match available to start. Pending matches:', pendingMatches.length);
-    }
-  };
-
   const resetTournamentMutation = useMutation({
     mutationFn: async () => {
       // Reset all bots to registered status
@@ -476,6 +382,21 @@ export default function Home() {
   };
 
   const isLoading = botsLoading || tourneysLoading;
+
+  // Find the next ready match (both bots assigned, status pending)
+  const getNextReadyMatch = () => {
+    if (!tournament) return null;
+    const allMatches = [
+      ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
+      ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' }))
+    ];
+    const ready = allMatches.filter(m => m.status === 'pending' && m.bot1_id && m.bot2_id);
+    if (ready.length > 0) return ready[0];
+    if (tournament.grand_finals?.bot1_id && tournament.grand_finals?.bot2_id && !tournament.grand_finals?.winner_id) {
+      return { bracket: 'finals', bot1_id: tournament.grand_finals.bot1_id, bot2_id: tournament.grand_finals.bot2_id };
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -536,23 +457,11 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue={tournament?.status === 'in_progress' ? 'bracket' : 'registration'} className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <TabsList className="bg-slate-800/50">
-              <TabsTrigger value="registration">Registration</TabsTrigger>
-              <TabsTrigger value="bracket">Tournament Bracket</TabsTrigger>
-              <TabsTrigger value="overlays">OBS Overlays</TabsTrigger>
-            </TabsList>
-
-            {tournament?.status === 'in_progress' && !tournament.current_match && (
-              <Button 
-                onClick={startNextMatch}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start Next Match
-              </Button>
-            )}
-          </div>
+          <TabsList className="bg-slate-800/50">
+            <TabsTrigger value="registration">Registration</TabsTrigger>
+            <TabsTrigger value="bracket">Tournament Bracket</TabsTrigger>
+            <TabsTrigger value="overlays">OBS Overlays</TabsTrigger>
+          </TabsList>
 
           {/* Registration Tab */}
           <TabsContent value="registration" className="space-y-6">
@@ -711,101 +620,141 @@ export default function Home() {
           {/* Bracket Tab */}
           <TabsContent value="bracket">
             {tournament ? (
-              <Card className="bg-slate-900/50 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>{tournament.name}</span>
-                    {tournament.current_match && (
-                      <div className="flex items-center gap-3">
-                        <Badge className="bg-red-500 animate-pulse">LIVE</Badge>
-                        
-                        {/* Pause/Resume */}
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            const updates = { is_paused: !tournament.is_paused };
-                            if (!tournament.is_paused) {
-                              // Pausing - calculate and store remaining time
-                              const end = new Date(tournament.countdown_end).getTime();
-                              const now = Date.now();
-                              const remaining = Math.max(0, Math.floor((end - now) / 1000));
-                              updates.paused_time_remaining = remaining;
-                            } else {
-                              // Resuming - calculate new end time from stored remaining time
-                              updates.countdown_end = new Date(Date.now() + (tournament.paused_time_remaining || 0) * 1000).toISOString();
-                            }
-                            base44.entities.Tournament.update(tournament.id, updates).then(() => {
-                              queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-                            });
-                          }}
-                          className={`h-7 text-xs ${tournament.is_paused ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`}
-                        >
-                          {tournament.is_paused ? 'Resume' : 'Pause'}
-                        </Button>
+              <div className="space-y-4">
+                {/* Match State Panel — shown only when tournament is running */}
+                {tournament.status === 'in_progress' && (() => {
+                  const cm = tournament.current_match;
 
-                        {/* Unstuck buttons */}
-                        <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg border border-slate-600">
-                          <span className="text-sm text-slate-400">Unstuck:</span>
+                  if (!cm) {
+                    // Waiting state — show next match preview
+                    const nextMatch = getNextReadyMatch();
+                    if (!nextMatch) return null;
+                    const nb1 = bots.find(b => b.id === nextMatch.bot1_id);
+                    const nb2 = bots.find(b => b.id === nextMatch.bot2_id);
+                    return (
+                      <Card className="bg-slate-900/60 border-slate-600">
+                        <CardContent className="py-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" />
+                            <span className="text-green-400 font-bold tracking-widest uppercase text-sm">Next Match Ready</span>
+                          </div>
+                          <div className="flex items-center justify-center gap-8 text-xl font-bold text-white mb-2">
+                            <span>{nb1?.name || 'TBD'}</span>
+                            <span className="text-slate-500 text-base">VS</span>
+                            <span>{nb2?.name || 'TBD'}</span>
+                          </div>
+                          <p className="text-center text-slate-400 text-sm">Press green button to start</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+
+                  if (cm.match_over) {
+                    // Match ended — prompt winner selection
+                    const b1 = bots.find(b => b.id === cm.bot1_id);
+                    const b2 = bots.find(b => b.id === cm.bot2_id);
+                    return (
+                      <Card className="bg-yellow-950/40 border-yellow-500/60">
+                        <CardContent className="py-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-yellow-400 font-bold tracking-widest uppercase text-sm">
+                              ⚡ Match Ended — Select Winner
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              onClick={() => selectWinnerMutation.mutate(cm.bot1_id)}
+                              disabled={selectWinnerMutation.isPending}
+                              className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-base font-bold py-6"
+                            >
+                              {b1?.name || 'Bot 1'}
+                            </Button>
+                            <Button
+                              onClick={() => selectWinnerMutation.mutate(cm.bot2_id)}
+                              disabled={selectWinnerMutation.isPending}
+                              className="flex-1 bg-purple-600 hover:bg-purple-700 text-base font-bold py-6"
+                            >
+                              {b2?.name || 'Bot 2'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+
+                  // Live / Paused state
+                  const b1 = bots.find(b => b.id === cm.bot1_id);
+                  const b2 = bots.find(b => b.id === cm.bot2_id);
+                  return (
+                    <Card className="bg-slate-900/60 border-slate-600">
+                      <CardContent className="py-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {tournament.is_paused ? (
+                            <span className="text-orange-400 font-bold tracking-widest uppercase text-sm">⏸ Paused</span>
+                          ) : (
+                            <>
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                              <span className="text-red-400 font-bold tracking-widest uppercase text-sm">Live</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center gap-8 text-xl font-bold text-white mb-3">
+                          <span>{b1?.name || 'TBD'}</span>
+                          <span className="text-slate-500 text-base">VS</span>
+                          <span>{b2?.name || 'TBD'}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="text-slate-400 text-sm">Unstuck:</span>
                           <Button
                             size="sm"
                             onClick={() => {
                               base44.entities.Tournament.update(tournament.id, {
-                                current_match: {
-                                  ...tournament.current_match,
-                                  bot1_unstuck: !tournament.current_match.bot1_unstuck
-                                }
+                                current_match: { ...cm, bot1_unstuck: !cm.bot1_unstuck }
                               }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
                             }}
-                            className={`h-7 text-xs ${tournament.current_match.bot1_unstuck ? 'bg-yellow-600' : 'bg-slate-700'}`}
+                            className={`text-xs ${cm.bot1_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
                           >
-                            {bots.find(b => b.id === tournament.current_match.bot1_id)?.name}
+                            {b1?.name || 'Bot 1'}
                           </Button>
                           <Button
                             size="sm"
                             onClick={() => {
                               base44.entities.Tournament.update(tournament.id, {
-                                current_match: {
-                                  ...tournament.current_match,
-                                  bot2_unstuck: !tournament.current_match.bot2_unstuck
-                                }
+                                current_match: { ...cm, bot2_unstuck: !cm.bot2_unstuck }
                               }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
                             }}
-                            className={`h-7 text-xs ${tournament.current_match.bot2_unstuck ? 'bg-yellow-600' : 'bg-slate-700'}`}
+                            className={`text-xs ${cm.bot2_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
                           >
-                            {bots.find(b => b.id === tournament.current_match.bot2_id)?.name}
+                            {b2?.name || 'Bot 2'}
                           </Button>
                         </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
 
-                        <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg border border-slate-600">
-                          <span className="text-sm text-slate-400">Select Winner:</span>
-                          <Button
-                            size="sm"
-                            onClick={() => selectWinnerMutation.mutate(tournament.current_match.bot1_id)}
-                            className="bg-cyan-600 hover:bg-cyan-700 h-7 text-xs"
-                          >
-                            {bots.find(b => b.id === tournament.current_match.bot1_id)?.name}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => selectWinnerMutation.mutate(tournament.current_match.bot2_id)}
-                            className="bg-purple-600 hover:bg-purple-700 h-7 text-xs"
-                          >
-                            {bots.find(b => b.id === tournament.current_match.bot2_id)?.name}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TournamentBracket 
-                    tournament={tournament}
-                    bots={bots}
-                    onSelectWinner={(winnerId) => selectWinnerMutation.mutate(winnerId)}
-                    showControls={true}
-                  />
-                </CardContent>
-              </Card>
+                {/* Bracket visualization */}
+                <Card className="bg-slate-900/50 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center justify-between">
+                      <span>{tournament.name}</span>
+                      {tournament.current_match && !tournament.current_match.match_over && (
+                        <Badge className={tournament.is_paused ? 'bg-orange-500' : 'bg-red-500 animate-pulse'}>
+                          {tournament.is_paused ? 'PAUSED' : 'LIVE'}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TournamentBracket
+                      tournament={tournament}
+                      bots={bots}
+                      onSelectWinner={(winnerId) => selectWinnerMutation.mutate(winnerId)}
+                      showControls={true}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             ) : (
               <Card className="bg-slate-900/50 border-slate-700 border-dashed">
                 <CardContent className="py-12 text-center">
