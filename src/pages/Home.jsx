@@ -26,12 +26,14 @@ export default function Home() {
 
   const { data: bots = [], isLoading: botsLoading } = useQuery({
     queryKey: ['bots'],
-    queryFn: () => base44.entities.Bot.list()
+    queryFn: () => base44.entities.Bot.list(),
+    refetchInterval: 5000
   });
 
   const { data: tournaments = [], isLoading: tourneysLoading } = useQuery({
     queryKey: ['tournaments'],
-    queryFn: () => base44.entities.Tournament.list('-created_date', 1)
+    queryFn: () => base44.entities.Tournament.list('-created_date', 1),
+    refetchInterval: 2000
   });
 
   const tournament = tournaments[0];
