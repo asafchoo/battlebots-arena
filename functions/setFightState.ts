@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
     let updatePayload: Record<string, unknown> = {};
     let responseState: string;
     let timeRemainingS: number;
+    let syncTimeMs: number;
 
     if (action === 'play') {
       // Case 1: match is over — awaiting winner selection, ignore green button
@@ -105,6 +106,7 @@ Deno.serve(async (req) => {
         }
 
         const remainingMs = FIGHT_DURATION_S * 1000;
+        syncTimeMs = remainingMs;
 
         // Mark the bracket match as in_progress
         if (nextMatch.bracket === 'winners') {
@@ -143,20 +145,22 @@ Deno.serve(async (req) => {
       } else if (tournament.is_paused && tournament.paused_time_remaining !== undefined) {
         // Case 3: Resume from pause — restore stored remaining time
         const remainingMs = tournament.paused_time_remaining * 1000;
+        syncTimeMs = remainingMs;
         updatePayload = {
           countdown_end: new Date(now + remainingMs).toISOString(),
           is_paused: false,
-          paused_time_remaining: Math.ceil(remainingMs / 1000),
+          paused_time_remaining: tournament.paused_time_remaining,
         };
         responseState = 'running';
-        timeRemainingS = Math.ceil(remainingMs / 1000);
+        timeRemainingS = tournament.paused_time_remaining;
 
       } else {
         // Case 4: Already running — no-op, return current state
         const existingEnd = new Date(tournament.countdown_end).getTime();
         const remainingMs = Math.max(0, existingEnd - now);
+        syncTimeMs = remainingMs;
         responseState = 'running';
-        timeRemainingS = Math.ceil(remainingMs / 1000);
+        timeRemainingS = Math.floor(remainingMs / 1000);
       }
 
     } else if (action === 'pause') {
@@ -164,6 +168,7 @@ Deno.serve(async (req) => {
         // Already paused — no-op
         responseState = 'paused';
         timeRemainingS = tournament.paused_time_remaining ?? FIGHT_DURATION_S;
+        syncTimeMs = timeRemainingS * 1000;
       } else {
         // Snapshot current remaining time
         let remainingMs = FIGHT_DURATION_S * 1000;
@@ -171,7 +176,8 @@ Deno.serve(async (req) => {
           const endTime = new Date(tournament.countdown_end).getTime();
           remainingMs = Math.max(0, endTime - now);
         }
-        const remainingS = Math.ceil(remainingMs / 1000);
+        const remainingS = Math.floor(remainingMs / 1000);
+        syncTimeMs = remainingMs;
 
         updatePayload = {
           is_paused: true,
@@ -187,6 +193,7 @@ Deno.serve(async (req) => {
         // No match running — no-op
         responseState = 'stopped';
         timeRemainingS = 0;
+        syncTimeMs = 0;
       } else {
         updatePayload = {
           countdown_end: null,
@@ -196,6 +203,7 @@ Deno.serve(async (req) => {
         };
         responseState = 'stopped';
         timeRemainingS = 0;
+        syncTimeMs = 0;
       }
     }
 
@@ -206,7 +214,7 @@ Deno.serve(async (req) => {
     console.log(`setFightState: action=${action} → state=${responseState}, time_remaining=${timeRemainingS}s`);
 
     return Response.json(
-      { ok: true, state: responseState, time_remaining_s: timeRemainingS },
+      { ok: true, state: responseState, time_remaining_s: timeRemainingS, sync_time_ms: syncTimeMs },
       { headers }
     );
 
