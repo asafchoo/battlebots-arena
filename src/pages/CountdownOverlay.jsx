@@ -66,8 +66,15 @@ export default function CountdownOverlay() {
   }, [tournament?.current_match?.match_number, tournament?.current_match?.match_over]);
 
   useEffect(() => {
+    // If match is over, freeze at 0:00
+    if (tournament?.current_match?.match_over) {
+      setTimeLeft(0);
+      setIsUrgent(false);
+      return;
+    }
+
     if (!tournament?.countdown_end) {
-      setTimeLeft(tournament?.current_match?.match_over ? 0 : 180);
+      setTimeLeft(180);
       return;
     }
 
