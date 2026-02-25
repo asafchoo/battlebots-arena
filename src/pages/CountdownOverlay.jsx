@@ -9,17 +9,40 @@ export default function CountdownOverlay() {
   const [isUrgent, setIsUrgent] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const [blinkVisible, setBlinkVisible] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState(Date.now());
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
     queryFn: () => base44.entities.Tournament.list('-created_date', 1),
-    refetchInterval: 500
+    refetchInterval: 300
   });
 
   const { data: bots = [] } = useQuery({
     queryKey: ['bots'],
     queryFn: () => base44.entities.Bot.list()
   });
+
+  // Poll ESP32 for sync
+  useEffect(() => {
+    const syncWithESP = async () => {
+      try {
+        const res = await fetch('/functions/getFightState');
+        const data = await res.json();
+        
+        if (data.state === 'running' && data.elapsed_ms !== undefined) {
+          const remaining = Math.max(0, Math.floor((data.duration_ms - data.elapsed_ms) / 1000));
+          setTimeLeft(remaining);
+          setIsUrgent(remaining <= 30);
+          setLastSyncTime(Date.now());
+        }
+      } catch (err) {
+        console.error('Sync error:', err);
+      }
+    };
+
+    const interval = setInterval(syncWithESP, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const tournament = tournaments[0];
 
@@ -35,16 +58,15 @@ export default function CountdownOverlay() {
 
   // Transition to compact mode after 3 seconds
   useEffect(() => {
-    if (tournament?.current_match) {
+    if (tournament?.current_match && !tournament.current_match.match_over) {
       setIsCompact(false);
       const timer = setTimeout(() => setIsCompact(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [tournament?.current_match?.match_number]);
+  }, [tournament?.current_match?.match_number, tournament?.current_match?.match_over]);
 
   useEffect(() => {
     if (!tournament?.countdown_end) {
-      // If match is over, freeze at 0:00; otherwise reset to full 3:00
       setTimeLeft(tournament?.current_match?.match_over ? 0 : 180);
       return;
     }
@@ -62,7 +84,7 @@ export default function CountdownOverlay() {
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
-      const diff = Math.max(0, Math.ceil((end - now) / 1000));
+      const diff = Math.max(0, Math.floor((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
     };
@@ -105,9 +127,7 @@ export default function CountdownOverlay() {
   }
 
   const winnerId = tournament.current_match?.winner_id || (showLastResult ? tournament.last_match_result?.winner_id : null);
-  const showJudgesView =
-    (timeLeft === 0 || tournament?.current_match?.match_over)
-    && !winnerId && tournament.current_match;
+  const showJudgesView = tournament?.current_match?.match_over && !winnerId;
   const showWinnerView = winnerId || showLastResult;
 
   return (
@@ -115,7 +135,7 @@ export default function CountdownOverlay() {
       className="fixed font-mono overflow-hidden" 
       style={{ width: '1920px', height: '1080px', margin: 0 }}
       animate={{
-        height: (isCompact && timeLeft > 0 && !showWinnerView) ? '140px' : '1080px',
+        height: (isCompact && !showJudgesView && !showWinnerView) ? '140px' : '1080px',
         top: 0
       }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -306,8 +326,7 @@ export default function CountdownOverlay() {
             exit={{ opacity: 0, scale: 0.95 }}
             className="absolute inset-0 flex items-center justify-center p-12"
           >
-            <div className="relative w-full max-w-6xl"
-        >
+            <div className="relative w-full max-w-6xl">
           {/* Glow background */}
           <div className={`absolute inset-0 rounded-3xl blur-3xl transition-colors duration-500 ${
             isUrgent ? 'bg-red-500/20' : 'bg-cyan-500/10'
