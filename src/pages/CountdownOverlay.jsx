@@ -13,7 +13,7 @@ export default function CountdownOverlay() {
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
     queryFn: () => base44.entities.Tournament.list('-created_date', 1),
-    refetchInterval: 1000
+    refetchInterval: 500
   });
 
   const { data: bots = [] } = useQuery({
@@ -62,13 +62,13 @@ export default function CountdownOverlay() {
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
-      const diff = Math.max(0, Math.floor((end - now) / 1000));
+      const diff = Math.max(0, Math.ceil((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    const interval = setInterval(updateTimer, 100);
     return () => clearInterval(interval);
   }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining, tournament?.id, tournament?.current_match?.match_over]);
 
