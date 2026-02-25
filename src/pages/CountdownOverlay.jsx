@@ -44,7 +44,8 @@ export default function CountdownOverlay() {
 
   useEffect(() => {
     if (!tournament?.countdown_end) {
-      setTimeLeft(180);
+      // If match is over, freeze at 0:00; otherwise reset to full 3:00
+      setTimeLeft(tournament?.current_match?.match_over ? 0 : 180);
       return;
     }
 
@@ -69,7 +70,7 @@ export default function CountdownOverlay() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining, tournament?.id]);
+  }, [tournament?.countdown_end, tournament?.is_paused, tournament?.paused_time_remaining, tournament?.id, tournament?.current_match?.match_over]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -104,7 +105,9 @@ export default function CountdownOverlay() {
   }
 
   const winnerId = tournament.current_match?.winner_id || (showLastResult ? tournament.last_match_result?.winner_id : null);
-  const showJudgesView = timeLeft === 0 && !winnerId && tournament.current_match;
+  const showJudgesView =
+    (timeLeft === 0 || tournament?.current_match?.match_over)
+    && !winnerId && tournament.current_match;
   const showWinnerView = winnerId || showLastResult;
 
   return (
