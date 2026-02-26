@@ -133,9 +133,11 @@ export default function CountdownOverlay() {
     );
   }
 
-  const winnerId = tournament.current_match?.winner_id || (showLastResult ? tournament.last_match_result?.winner_id : null);
-  const showJudgesView = tournament?.current_match?.match_over && !winnerId;
-  const showWinnerView = winnerId || showLastResult;
+  // Determine which view to show
+  const hasWinnerId = tournament.current_match?.winner_id || (showLastResult && tournament.last_match_result?.winner_id);
+  const showJudgesView = tournament?.current_match?.match_over && !hasWinnerId;
+  const showWinnerView = hasWinnerId || showLastResult;
+  const winnerId = hasWinnerId;
 
   return (
     <motion.div 
