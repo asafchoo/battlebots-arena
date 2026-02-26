@@ -14,7 +14,7 @@ export default function CountdownOverlay() {
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
     queryFn: () => base44.entities.Tournament.list('-created_date', 1),
-    refetchInterval: 300
+    refetchInterval: 100
   });
 
   const { data: bots = [] } = useQuery({
@@ -40,7 +40,7 @@ export default function CountdownOverlay() {
       }
     };
 
-    const interval = setInterval(syncWithESP, 5000);
+    const interval = setInterval(syncWithESP, 1000);
     return () => clearInterval(interval);
   }, []);
 
