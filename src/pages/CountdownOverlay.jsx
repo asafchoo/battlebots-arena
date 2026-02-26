@@ -73,7 +73,7 @@ export default function CountdownOverlay() {
       return;
     }
 
-    if (!tournament?.countdown_end) {
+    if (!tournament?.countdown_end && !tournament?.current_match?.match_over) {
       setTimeLeft(180);
       return;
     }
