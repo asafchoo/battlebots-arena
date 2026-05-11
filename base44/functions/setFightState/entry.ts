@@ -21,6 +21,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 const FIGHT_DURATION_S = 180;
 const FIGHT_DURATION_MS = FIGHT_DURATION_S * 1000;
 
+const PRESTART_DURATION_S = 5;
+const PRESTART_DURATION_MS = PRESTART_DURATION_S * 1000;
+
+const WEB_TOTAL_DURATION_MS = FIGHT_DURATION_MS + PRESTART_DURATION_MS;
+
 const VALID_EPOCH_MS_MIN = 1700000000000; // 2023-11-14; protects against unsynced ESP32 time
 const MAX_FUTURE_SLOP_MS = 60000;
 const MAX_PAST_SLOP_MS = 10000;
@@ -37,13 +42,13 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function clampRemainingMs(value: unknown): number | null {
-  const n = numberOrNull(value);
+   const n = numberOrNull(value);
   if (n === null) return null;
-  return Math.floor(clamp(n, 0, FIGHT_DURATION_MS));
+  return Math.floor(clamp(n, 0, WEB_TOTAL_DURATION_MS));
 }
 
 function ceilSeconds(ms: number): number {
-  return Math.ceil(clamp(ms, 0, FIGHT_DURATION_MS) / 1000);
+  return Math.ceil(clamp(ms, 0, WEB_TOTAL_DURATION_MS) / 1000);
 }
 
 function validControllerCountdownEndMs(value: unknown, serverNowMs: number): number | null {
@@ -56,9 +61,7 @@ function validControllerCountdownEndMs(value: unknown, serverNowMs: number): num
   // Accept only timestamps that make sense for a 3-minute fight.
   // This prevents a bad ESP32 clock from poisoning the web timer.
   const minAllowed = serverNowMs - MAX_PAST_SLOP_MS;
-  const maxAllowed = serverNowMs + FIGHT_DURATION_MS + MAX_FUTURE_SLOP_MS;
-  if (endMs < minAllowed || endMs > maxAllowed) return null;
-
+  const maxAllowed = serverNowMs + WEB_TOTAL_DURATION_MS + MAX_FUTURE_SLOP_MS;  if (endMs < minAllowed || endMs > maxAllowed) return null;
   return endMs;
 }
 
@@ -171,7 +174,7 @@ Deno.serve(async (req: any) => {
 
         const remainingMs = clientRemainingMs ?? FIGHT_DURATION_MS;
         const countdownEndMs = clientCountdownEndMs ?? (now + remainingMs);
-        syncTimeMs = clamp(countdownEndMs - now, 0, FIGHT_DURATION_MS);
+        syncTimeMs = clamp(countdownEndMs - now, 0, WEB_TOTAL_DURATION_MS);
         responseCountdownEndMs = countdownEndMs;
 
         // Mark the bracket match as in_progress
