@@ -120,26 +120,20 @@ export default function Home() {
       }
 
       // Build losers bracket structure
+      // LB structure for double elimination:
+      // WB Round 1 losers → LB Round 1 (round1Matches/2 matches)
+      // LB Round 2: LB R1 winners vs WB Round 2 losers (round1Matches/2 matches)
+      // LB Round 3: LB R2 winners fight each other (round1Matches/4 matches)
+      // LB Round 4: LB R3 winners vs WB Round 3 losers...
+      // Pattern: odd rounds = survivors fight each other (halving), even rounds = new WB losers join
       const losers_bracket = [];
-      const totalWinnerRounds = currentRound - 1;
-      const losersRounds = totalWinnerRounds * 2 - 1;
+      const totalWinnerRounds = currentRound - 1; // how many WB rounds
+      const losersRounds = (totalWinnerRounds - 1) * 2; // LB rounds
       let losersMatchNum = 1;
-      
-      // Losers bracket has alternating structure
+      let lbMatchCount = round1Matches / 2;
+
       for (let r = 1; r <= losersRounds; r++) {
-        let matchesInRound;
-        if (r === 1) {
-          // First losers round gets half of R1 losers
-          matchesInRound = Math.floor(round1Matches / 2);
-        } else if (r % 2 === 1) {
-          // Odd rounds (after R1): winners from previous LB round fight each other
-          matchesInRound = Math.ceil(matchesInRound / 2);
-        } else {
-          // Even rounds: new WB losers join
-          matchesInRound = matchesInRound;
-        }
-        
-        for (let m = 0; m < matchesInRound; m++) {
+        for (let m = 0; m < lbMatchCount; m++) {
           losers_bracket.push({
             round: r,
             match_number: losersMatchNum++,
@@ -148,6 +142,11 @@ export default function Home() {
             winner_id: null,
             status: 'pending'
           });
+        }
+        // Odd rounds: halve (survivors fight each other next)
+        // Even rounds: keep same count (new WB losers join)
+        if (r % 2 === 1) {
+          lbMatchCount = Math.ceil(lbMatchCount / 2);
         }
       }
 
@@ -228,13 +227,25 @@ export default function Home() {
         console.log('Advanced winners bracket:', advancedWinners.filter(m => m.round === nextRound).map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
         
         updates.winners_bracket = advancedWinners;
+
+        // If no next WB match, this is the WB finalist → goes to Grand Finals bot1
+        if (!nextMatch) {
+          updates.grand_finals = {
+            ...tournament.grand_finals,
+            bot1_id: winnerId
+          };
+        }
         
-        // Move loser to losers bracket - first check if bot2_id exists
-        const loserRound = round;
+        // Move loser to correct LB round
+        // WB Round 1 losers → LB Round 1
+        // WB Round 2 losers → LB Round 2
+        // WB Round 3 losers → LB Round 4
+        // WB Round N losers → LB Round (N-1)*2  (except WB R1 → LB R1)
+        const lbRoundForLoser = round === 1 ? 1 : (round - 1) * 2;
         console.log('=== LOSERS BRACKET PLACEMENT ===');
-        console.log('Looking for loser slot in round:', loserRound);
-        const targetLoserMatch = tournament.losers_bracket.find(m => 
-          m.round === loserRound && 
+        console.log('WB round:', round, '→ LB round:', lbRoundForLoser);
+        const targetLoserMatch = (updates.losers_bracket || tournament.losers_bracket).find(m => 
+          m.round === lbRoundForLoser && 
           (!m.bot1_id || !m.bot2_id) &&
           m.bot1_id !== loserId && 
           m.bot2_id !== loserId
@@ -266,43 +277,40 @@ export default function Home() {
           return m;
         });
         
-        // Advance winner to next losers round or grand finals
-        const nextRound = round + 1;
-        const nextLoserMatch = tournament.losers_bracket.find(m => 
-          m.round === nextRound && !m.bot1_id && !m.bot2_id
-        );
-        
-        if (nextLoserMatch) {
-          updates.losers_bracket = newLosers.map(m => {
-            if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
-              return { ...m, bot1_id: winnerId };
-            }
-            return m;
-          });
+        // Check if this is the last LB match
+        const maxLBRound = Math.max(...tournament.losers_bracket.map(m => m.round));
+        const isLastLoserMatch = round === maxLBRound;
+
+        if (isLastLoserMatch) {
+          // Advance to grand finals as bot2
+          const winnersFinalWinner = tournament.winners_bracket
+            .filter(m => m.status === 'complete')
+            .sort((a, b) => b.round - a.round)[0]?.winner_id;
+          updates.grand_finals = {
+            ...tournament.grand_finals,
+            bot2_id: winnerId,
+            bot1_id: winnersFinalWinner || tournament.grand_finals?.bot1_id || null
+          };
+          updates.losers_bracket = newLosers;
         } else {
-          // Check if this is the last losers match - advance to grand finals
-          const isLastLoserMatch = !tournament.losers_bracket.some(m => 
-            m.round > round && m.status !== 'complete'
+          // Advance winner to next LB round
+          const nextRound = round + 1;
+          // Find a slot in the next round that has an open spot
+          const nextLoserMatch = newLosers.find(m => 
+            m.round === nextRound && (!m.bot1_id || !m.bot2_id) &&
+            m.bot1_id !== winnerId && m.bot2_id !== winnerId
           );
-          if (isLastLoserMatch) {
-            updates.grand_finals = {
-              ...tournament.grand_finals,
-              bot2_id: winnerId
-            };
-            // Set bot1 from winners bracket final
-            const winnersFinalWinner = tournament.winners_bracket
-              .filter(m => m.status === 'complete')
-              .sort((a, b) => b.round - a.round)[0]?.winner_id;
-            if (winnersFinalWinner) {
-              updates.grand_finals.bot1_id = winnersFinalWinner;
-            }
+          
+          if (nextLoserMatch) {
+            updates.losers_bracket = newLosers.map(m => {
+              if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
+                return { ...m, [!m.bot1_id ? 'bot1_id' : 'bot2_id']: winnerId };
+              }
+              return m;
+            });
           } else {
             updates.losers_bracket = newLosers;
           }
-        }
-        
-        if (!updates.losers_bracket) {
-          updates.losers_bracket = newLosers;
         }
         
         // Eliminate the loser
