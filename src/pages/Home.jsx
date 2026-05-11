@@ -806,7 +806,7 @@ export default function Home() {
                           <span className="text-slate-500 text-base">VS</span>
                           <span>{b2?.name || 'TBD'}</span>
                         </div>
-                        <div className="flex items-center justify-center gap-3">
+                        <div className="flex items-center justify-center gap-3 flex-wrap">
                           <span className="text-slate-400 text-sm">Unstuck:</span>
                           <Button
                             size="sm"
@@ -829,6 +829,20 @@ export default function Home() {
                             className={`text-xs ${cm.bot2_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
                           >
                             {b2?.name || 'Bot 2'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              base44.entities.Tournament.update(tournament.id, {
+                                current_match: { ...cm, match_over: true },
+                                countdown_end: null,
+                                is_paused: false,
+                                paused_time_remaining: 0
+                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                            }}
+                            className="text-xs bg-red-700 hover:bg-red-800 ml-4"
+                          >
+                            ■ End Match
                           </Button>
                         </div>
                       </CardContent>
