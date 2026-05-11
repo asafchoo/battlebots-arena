@@ -216,7 +216,7 @@ Deno.serve(async (req: any) => {
         const storedRemainingMs = getStoredPausedRemainingMs(tournament) ?? FIGHT_DURATION_MS;
         const remainingMs = clientRemainingMs ?? storedRemainingMs;
         const countdownEndMs = clientCountdownEndMs ?? (now + remainingMs);
-        syncTimeMs = clamp(countdownEndMs - now, 0, FIGHT_DURATION_MS);
+        syncTimeMs = clamp(countdownEndMs - now, 0, WEB_TOTAL_DURATION_MS);
         responseCountdownEndMs = countdownEndMs;
 
         updatePayload = {
