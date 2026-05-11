@@ -42,7 +42,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function clampRemainingMs(value: unknown): number | null {
-   const n = numberOrNull(value);
+  const n = numberOrNull(value);
   if (n === null) return null;
   return Math.floor(clamp(n, 0, WEB_TOTAL_DURATION_MS));
 }
