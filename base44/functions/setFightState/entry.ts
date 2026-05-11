@@ -216,10 +216,10 @@ Deno.serve(async (req: any) => {
         responseCountdownEndMs = countdownEndMs;
 
         updatePayload = {
-          countdown_end: new Date(countdownEndMs).toISOString(),
-           is_paused: true,
-            paused_time_remaining: ceilSeconds(remainingMs),
-            paused_time_remaining_ms: remainingMs,
+           countdown_end: new Date(countdownEndMs).toISOString(),
+          is_paused: false,
+          paused_time_remaining: ceilSeconds(syncTimeMs),
+          paused_time_remaining_ms: syncTimeMs,
         };
 
         responseState = 'running';
@@ -246,8 +246,9 @@ Deno.serve(async (req: any) => {
         syncTimeMs = remainingMs;
 
         updatePayload = {
-          is_paused: true,
+         is_paused: true,
           paused_time_remaining: ceilSeconds(remainingMs),
+          paused_time_remaining_ms: remainingMs,
         };
 
         responseState = 'paused';
@@ -263,9 +264,12 @@ Deno.serve(async (req: any) => {
       } else {
         updatePayload = {
           countdown_end: null,
-          is_paused: false,
-          paused_time_remaining: 0,
-          current_match: { ...tournament.current_match, match_over: true },
+  is_paused: false,
+  paused_time_remaining: 0,
+  paused_time_remaining_ms: 0,
+  current_match: {
+    ...tournament.current_match,
+    match_over: true },
         };
 
         responseState = 'stopped';
