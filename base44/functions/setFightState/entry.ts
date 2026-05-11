@@ -151,12 +151,11 @@ const clientRemainingMs = Number.isFinite(clientRemainingMsRaw)
           bot2_id: nextMatch.bot2_id,
           match_over: false,
         };
-        updatePayload.countdown_end = new Date(now + remainingMs).toISOString();
+        updatePayload.countdown_end = new Date(countdownEndMs).toISOString();
         updatePayload.is_paused = false;
-        updatePayload.paused_time_remaining = FIGHT_DURATION_S;
-
+        updatePayload.paused_time_remaining = Math.ceil(syncTimeMs / 1000);
         responseState = 'running';
-        timeRemainingS = FIGHT_DURATION_S;
+        timeRemainingS = Math.ceil(syncTimeMs / 1000);
 
       } else if (tournament.is_paused && tournament.paused_time_remaining !== undefined) {
         // Case 3: Resume from pause — restore stored remaining time
