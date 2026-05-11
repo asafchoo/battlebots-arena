@@ -21,28 +21,6 @@ export default function CountdownOverlay() {
     queryFn: () => base44.entities.Bot.list()
   });
 
-  // Poll ESP32 for sync
-  useEffect(() => {
-    const syncWithESP = async () => {
-      try {
-        const res = await fetch('/functions/getFightState');
-        const data = await res.json();
-        
-        if (data.state === 'running' && data.elapsed_ms !== undefined) {
-          const remaining = Math.max(0, Math.floor((data.duration_ms - data.elapsed_ms) / 1000));
-          setTimeLeft(remaining);
-          setIsUrgent(remaining <= 30);
-          setLastSyncTime(Date.now());
-        }
-      } catch (err) {
-        console.error('Sync error:', err);
-      }
-    };
-
-    const interval = setInterval(syncWithESP, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const tournament = tournaments[0];
 
   // Blink the timer when paused (0.5s on / 0.5s off)
@@ -90,7 +68,7 @@ export default function CountdownOverlay() {
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
       const now = Date.now();
-      const diff = Math.max(0, Math.floor((end - now) / 1000));
+      const diff = Math.max(0, Math.ceil((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
     };
