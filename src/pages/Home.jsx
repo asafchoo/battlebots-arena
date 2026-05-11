@@ -681,7 +681,35 @@ export default function Home() {
                             <span className="text-slate-500 text-base">VS</span>
                             <span>{nb2?.name || 'TBD'}</span>
                           </div>
-                          <p className="text-center text-slate-400 text-sm">Press green button to start</p>
+                          <div className="flex justify-center">
+                            <Button
+                              onClick={async () => {
+                                const m = nextMatch;
+                                // Write the chosen match as current_match
+                                await base44.entities.Tournament.update(tournament.id, {
+                                  current_match: {
+                                    bracket: m.bracket,
+                                    round: m.round,
+                                    match_number: m.match_number,
+                                    bot1_id: m.bot1_id,
+                                    bot2_id: m.bot2_id,
+                                    match_over: false,
+                                    bot1_unstuck: false,
+                                    bot2_unstuck: false
+                                  },
+                                  is_paused: false
+                                });
+                                // Immediately trigger setFightState play so the timer starts
+                                await base44.functions.invoke('setFightState', { action: 'play' });
+                                queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                                setOverrideMatch(null);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 font-bold px-8"
+                            >
+                              ▶ Start Match
+                            </Button>
+                          </div>
+                          <p className="text-center text-slate-400 text-xs">Or press the green button on the controller</p>
 
                           {/* Manual override — show other ready matches */}
                           {readyMatches.length > 1 && (
@@ -699,26 +727,8 @@ export default function Home() {
                                   return (
                                     <button
                                      key={`${m.bracket}-${m.match_number}`}
-                                     onClick={async () => {
-                                       const selecting = !isSelected;
-                                       setOverrideMatch(selecting ? m : null);
-                                       // Pre-write the chosen match as current_match so setFightState starts the right one
-                                       const matchPayload = selecting ? {
-                                         bracket: m.bracket,
-                                         round: m.round,
-                                         match_number: m.match_number,
-                                         bot1_id: m.bot1_id,
-                                         bot2_id: m.bot2_id,
-                                         match_over: false,
-                                         bot1_unstuck: false,
-                                         bot2_unstuck: false
-                                       } : null;
-                                       // Also prime is_paused so setFightState treats the green-button press as a resume
-                                       const extras = selecting
-                                         ? { is_paused: true, paused_time_remaining: 180 }
-                                         : { is_paused: false };
-                                       await base44.entities.Tournament.update(tournament.id, { current_match: matchPayload, ...extras });
-                                       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                                     onClick={() => {
+                                       setOverrideMatch(isSelected ? null : m);
                                      }}
                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                        isSelected
