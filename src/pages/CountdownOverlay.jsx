@@ -9,7 +9,6 @@ export default function CountdownOverlay() {
   const [isUrgent, setIsUrgent] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const [blinkVisible, setBlinkVisible] = useState(true);
-  const [lastSyncTime, setLastSyncTime] = useState(Date.now());
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
