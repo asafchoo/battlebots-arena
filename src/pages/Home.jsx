@@ -698,13 +698,33 @@ export default function Home() {
                                     : idx === 0;
                                   return (
                                     <button
-                                      key={`${m.bracket}-${m.match_number}`}
-                                      onClick={() => setOverrideMatch(isSelected ? null : m)}
-                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
-                                        isSelected
-                                          ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300'
-                                          : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                                      }`}
+                                     key={`${m.bracket}-${m.match_number}`}
+                                     onClick={async () => {
+                                       const selecting = !isSelected;
+                                       setOverrideMatch(selecting ? m : null);
+                                       // Pre-write the chosen match as current_match so setFightState starts the right one
+                                       const matchPayload = selecting ? {
+                                         bracket: m.bracket,
+                                         round: m.round,
+                                         match_number: m.match_number,
+                                         bot1_id: m.bot1_id,
+                                         bot2_id: m.bot2_id,
+                                         match_over: false,
+                                         bot1_unstuck: false,
+                                         bot2_unstuck: false
+                                       } : null;
+                                       // Also prime is_paused so setFightState treats the green-button press as a resume
+                                       const extras = selecting
+                                         ? { is_paused: true, paused_time_remaining: 180 }
+                                         : { is_paused: false };
+                                       await base44.entities.Tournament.update(tournament.id, { current_match: matchPayload, ...extras });
+                                       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                                     }}
+                                     className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
+                                       isSelected
+                                         ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300'
+                                         : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                                     }`}
                                     >
                                       <span className="font-semibold">{b1?.name || '?'} vs {b2?.name || '?'}</span>
                                       <span className="text-xs opacity-60 ml-2 uppercase">
