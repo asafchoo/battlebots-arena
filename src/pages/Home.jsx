@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import BotRegistrationForm from "@/components/bots/BotRegistrationForm";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
 import {
   Plus, Trophy, Users, Swords, ExternalLink,
-  Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw
+  Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw, ChevronDown
 } from "lucide-react";
 
 export default function Home() {
@@ -22,6 +22,7 @@ export default function Home() {
   const [tournamentName, setTournamentName] = useState("Battle Bots Championship");
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
+  const [overrideMatch, setOverrideMatch] = useState(null); // manually selected match to run next
   const queryClient = useQueryClient();
 
   const { data: bots = [], isLoading: botsLoading } = useQuery({
@@ -256,11 +257,12 @@ export default function Home() {
           updates.losers_bracket = tournament.losers_bracket.map(m => {
             if (m.round === targetLoserMatch.round && m.match_number === targetLoserMatch.match_number) {
               if (!m.bot1_id) {
-                console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot1');
-                return { ...m, bot1_id: loserId };
+                const updated = { ...m, bot1_id: loserId };
+                // mark ready if now both slots filled
+                if (m.bot2_id) updated.ready_since = new Date().toISOString();
+                return updated;
               } else if (!m.bot2_id && m.bot1_id !== loserId) {
-                console.log('✓ Placing loser', loserId, 'in match', m.match_number, 'as bot2');
-                return { ...m, bot2_id: loserId };
+                return { ...m, bot2_id: loserId, ready_since: new Date().toISOString() };
               }
             }
             return m;
@@ -304,7 +306,11 @@ export default function Home() {
           if (nextLoserMatch) {
             updates.losers_bracket = newLosers.map(m => {
               if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
-                return { ...m, [!m.bot1_id ? 'bot1_id' : 'bot2_id']: winnerId };
+                const slot = !m.bot1_id ? 'bot1_id' : 'bot2_id';
+                const updated = { ...m, [slot]: winnerId };
+                // mark ready when second bot fills in
+                if (slot === 'bot2_id' || m.bot2_id) updated.ready_since = new Date().toISOString();
+                return updated;
               }
               return m;
             });
@@ -391,21 +397,39 @@ export default function Home() {
     }
   };
 
+  // Clear override once a match becomes active
+  useEffect(() => {
+    if (tournament?.current_match) setOverrideMatch(null);
+  }, [tournament?.current_match?.match_number]);
+
   const isLoading = botsLoading || tourneysLoading;
 
-  // Find the next ready match (both bots assigned, status pending)
-  const getNextReadyMatch = () => {
-    if (!tournament) return null;
+  // All matches that are ready to fight (both bots assigned, status pending), sorted by wait time
+  const getReadyMatches = () => {
+    if (!tournament) return [];
     const allMatches = [
       ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
       ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' }))
     ];
-    const ready = allMatches.filter(m => m.status === 'pending' && m.bot1_id && m.bot2_id);
-    if (ready.length > 0) return ready[0];
+    const ready = allMatches
+      .filter(m => m.status === 'pending' && m.bot1_id && m.bot2_id)
+      .sort((a, b) => {
+        // Sort by ready_since ascending (longest waiting first); fallback to match_number
+        if (a.ready_since && b.ready_since) return new Date(a.ready_since) - new Date(b.ready_since);
+        if (a.ready_since) return -1;
+        if (b.ready_since) return 1;
+        return a.match_number - b.match_number;
+      });
     if (tournament.grand_finals?.bot1_id && tournament.grand_finals?.bot2_id && !tournament.grand_finals?.winner_id) {
-      return { bracket: 'finals', bot1_id: tournament.grand_finals.bot1_id, bot2_id: tournament.grand_finals.bot2_id };
+      ready.push({ bracket: 'finals', bot1_id: tournament.grand_finals.bot1_id, bot2_id: tournament.grand_finals.bot2_id });
     }
-    return null;
+    return ready;
+  };
+
+  const getNextReadyMatch = () => {
+    if (overrideMatch) return overrideMatch;
+    const ready = getReadyMatches();
+    return ready[0] || null;
   };
 
   return (
@@ -636,24 +660,63 @@ export default function Home() {
                   const cm = tournament.current_match;
 
                   if (!cm) {
-                    // Waiting state — show next match preview
-                    const nextMatch = getNextReadyMatch();
+                    // Waiting state — show next match preview + manual override picker
+                    const readyMatches = getReadyMatches();
+                    const nextMatch = overrideMatch || readyMatches[0];
                     if (!nextMatch) return null;
                     const nb1 = bots.find(b => b.id === nextMatch.bot1_id);
                     const nb2 = bots.find(b => b.id === nextMatch.bot2_id);
                     return (
                       <Card className="bg-slate-900/60 border-slate-600">
-                        <CardContent className="py-4">
-                          <div className="flex items-center gap-2 mb-2">
+                        <CardContent className="py-4 space-y-3">
+                          <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" />
                             <span className="text-green-400 font-bold tracking-widest uppercase text-sm">Next Match Ready</span>
+                            {overrideMatch && (
+                              <span className="ml-auto text-xs text-yellow-400 bg-yellow-900/40 px-2 py-0.5 rounded border border-yellow-700">Manual Override</span>
+                            )}
                           </div>
-                          <div className="flex items-center justify-center gap-8 text-xl font-bold text-white mb-2">
+                          <div className="flex items-center justify-center gap-8 text-xl font-bold text-white">
                             <span>{nb1?.name || 'TBD'}</span>
                             <span className="text-slate-500 text-base">VS</span>
                             <span>{nb2?.name || 'TBD'}</span>
                           </div>
                           <p className="text-center text-slate-400 text-sm">Press green button to start</p>
+
+                          {/* Manual override — show other ready matches */}
+                          {readyMatches.length > 1 && (
+                            <div className="pt-2 border-t border-slate-700">
+                              <p className="text-xs text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <ChevronDown className="w-3 h-3" /> Prioritize a different match
+                              </p>
+                              <div className="flex flex-col gap-1.5">
+                                {readyMatches.map((m, idx) => {
+                                  const b1 = bots.find(b => b.id === m.bot1_id);
+                                  const b2 = bots.find(b => b.id === m.bot2_id);
+                                  const isSelected = overrideMatch
+                                    ? overrideMatch.match_number === m.match_number && overrideMatch.bracket === m.bracket
+                                    : idx === 0;
+                                  return (
+                                    <button
+                                      key={`${m.bracket}-${m.match_number}`}
+                                      onClick={() => setOverrideMatch(isSelected ? null : m)}
+                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
+                                        isSelected
+                                          ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300'
+                                          : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                                      }`}
+                                    >
+                                      <span className="font-semibold">{b1?.name || '?'} vs {b2?.name || '?'}</span>
+                                      <span className="text-xs opacity-60 ml-2 uppercase">
+                                        {m.bracket === 'winners' ? 'WB' : m.bracket === 'losers' ? 'LB' : 'Finals'} R{m.round}
+                                        {idx === 0 && !overrideMatch ? ' · default' : ''}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
