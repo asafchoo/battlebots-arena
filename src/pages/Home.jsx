@@ -23,6 +23,7 @@ export default function Home() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
   const [overrideMatch, setOverrideMatch] = useState(null); // manually selected match to run next
+  const [localMatchOver, setLocalMatchOver] = useState(null); // {bot1_id, bot2_id} when end match pressed locally
   const queryClient = useQueryClient();
 
   const { data: bots = [], isLoading: botsLoading } = useQuery({
@@ -406,6 +407,10 @@ export default function Home() {
     if (!prevMatch && currMatch && !currMatch.match_over) {
       setOverrideMatch(null);
     }
+    // Clear localMatchOver when current_match is cleared (after winner selected)
+    if (!currMatch) {
+      setLocalMatchOver(null);
+    }
     prevMatchRef.current = currMatch;
   }, [tournament?.current_match]);
 
@@ -778,10 +783,11 @@ export default function Home() {
                     );
                   }
 
-                  if (cm.match_over) {
+                  if (cm.match_over || localMatchOver) {
                     // Match ended — prompt winner selection
-                    const b1 = bots.find(b => b.id === cm.bot1_id);
-                    const b2 = bots.find(b => b.id === cm.bot2_id);
+                    const matchData = localMatchOver || cm;
+                    const b1 = bots.find(b => b.id === matchData.bot1_id);
+                    const b2 = bots.find(b => b.id === matchData.bot2_id);
                     return (
                       <Card className="bg-yellow-950/40 border-yellow-500/60">
                         <CardContent className="py-4">
@@ -792,14 +798,14 @@ export default function Home() {
                           </div>
                           <div className="flex items-center gap-3">
                             <Button
-                              onClick={() => selectWinnerMutation.mutate(cm.bot1_id)}
+                              onClick={() => selectWinnerMutation.mutate(matchData.bot1_id)}
                               disabled={selectWinnerMutation.isPending}
                               className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-base font-bold py-6"
                             >
                               {b1?.name || 'Bot 1'}
                             </Button>
                             <Button
-                              onClick={() => selectWinnerMutation.mutate(cm.bot2_id)}
+                              onClick={() => selectWinnerMutation.mutate(matchData.bot2_id)}
                               disabled={selectWinnerMutation.isPending}
                               className="flex-1 bg-purple-600 hover:bg-purple-700 text-base font-bold py-6"
                             >
@@ -859,14 +865,15 @@ export default function Home() {
                           <Button
                             size="sm"
                             onClick={async () => {
-                              await base44.entities.Tournament.update(tournament.id, {
+                              // Set local state immediately so UI switches right away
+                              setLocalMatchOver({ bot1_id: cm.bot1_id, bot2_id: cm.bot2_id });
+                              // Also persist to DB (best-effort, ESP32 may overwrite but local state holds)
+                              base44.entities.Tournament.update(tournament.id, {
                                 current_match: { ...cm, match_over: true },
                                 countdown_end: null,
                                 is_paused: false,
                                 paused_time_remaining: 0
                               });
-                              await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-                              await queryClient.refetchQueries({ queryKey: ['tournaments'] });
                             }}
                             className="text-xs bg-red-700 hover:bg-red-800 ml-4"
                           >
