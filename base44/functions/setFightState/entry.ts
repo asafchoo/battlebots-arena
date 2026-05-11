@@ -57,6 +57,20 @@ Deno.serve(async (req) => {
     }
 
     const now = Date.now();
+    const clientRemainingMsRaw = Number(body.remaining_ms ?? body.remainingMs);
+const clientRemainingMs = Number.isFinite(clientRemainingMsRaw)
+  ? Math.max(0, Math.min(FIGHT_DURATION_S * 1000, Math.floor(clientRemainingMsRaw)))
+  : null;
+
+const clientCountdownEndMsRaw = Number(body.countdown_end_ms ?? body.countdownEndMs);
+const clientCountdownEndMs = (
+  Number.isFinite(clientCountdownEndMsRaw) &&
+  clientCountdownEndMsRaw > 1700000000000 &&
+  clientCountdownEndMsRaw > now - 10000 &&
+  clientCountdownEndMsRaw < now + (FIGHT_DURATION_S * 1000) + 60000
+)
+  ? Math.floor(clientCountdownEndMsRaw)
+  : null;
     let updatePayload: Record<string, unknown> = {};
     let responseState: string;
     let timeRemainingS: number;
