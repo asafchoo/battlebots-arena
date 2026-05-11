@@ -77,7 +77,7 @@ function getCurrentRemainingFromCountdownEnd(tournament: AnyRecord, nowMs: numbe
   if (!tournament.countdown_end) return FIGHT_DURATION_MS;
   const endTimeMs = new Date(tournament.countdown_end).getTime();
   if (!Number.isFinite(endTimeMs)) return FIGHT_DURATION_MS;
-  return clamp(endTimeMs - nowMs, 0, FIGHT_DURATION_MS);
+  return clamp(endTimeMs - nowMs, 0, WEB_TOTAL_DURATION_MS);
 }
 
 Deno.serve(async (req: any) => {
@@ -229,33 +229,33 @@ Deno.serve(async (req: any) => {
         responseState = 'running';
         timeRemainingS = ceilSeconds(syncTimeMs);
       } else {
-  // Case 4: Already running / current_match already exists.
-  // If the ESP32 sends a 185s play packet, treat it as a fresh prestart sync.
-  if (clientRemainingMs !== null && clientRemainingMs > FIGHT_DURATION_MS) {
-    const remainingMs = clientRemainingMs;
-    const countdownEndMs = clientCountdownEndMs ?? (now + remainingMs);
+      // Case 4: Already running / current_match already exists.
+      // If the ESP32 sends a 185s play packet, treat it as a fresh prestart sync.
+      if (clientRemainingMs !== null && clientRemainingMs > FIGHT_DURATION_MS) {
+        const remainingMs = clientRemainingMs;
+        const countdownEndMs = clientCountdownEndMs ?? (now + remainingMs);
 
-    syncTimeMs = clamp(countdownEndMs - now, 0, WEB_TOTAL_DURATION_MS);
-    responseCountdownEndMs = countdownEndMs;
+        syncTimeMs = clamp(countdownEndMs - now, 0, WEB_TOTAL_DURATION_MS);
+        responseCountdownEndMs = countdownEndMs;
 
-    updatePayload = {
-      countdown_end: new Date(countdownEndMs).toISOString(),
-      is_paused: false,
-      paused_time_remaining: ceilSeconds(syncTimeMs),
-      paused_time_remaining_ms: syncTimeMs,
-    };
+        updatePayload = {
+          countdown_end: new Date(countdownEndMs).toISOString(),
+          is_paused: false,
+          paused_time_remaining: ceilSeconds(syncTimeMs),
+          paused_time_remaining_ms: syncTimeMs,
+        };
 
-    responseState = 'running';
-    timeRemainingS = ceilSeconds(syncTimeMs);
-  } else {
-    // Normal already-running no-op
-    const remainingMs = getCurrentRemainingFromCountdownEnd(tournament, now);
-    syncTimeMs = remainingMs;
-    responseCountdownEndMs = tournament.countdown_end ? new Date(tournament.countdown_end).getTime() : null;
-    responseState = 'running';
-    timeRemainingS = ceilSeconds(remainingMs);
-  }
-}
+        responseState = 'running';
+        timeRemainingS = ceilSeconds(syncTimeMs);
+      } else {
+        // Normal already-running no-op
+        const remainingMs = getCurrentRemainingFromCountdownEnd(tournament, now);
+        syncTimeMs = remainingMs;
+        responseCountdownEndMs = tournament.countdown_end ? new Date(tournament.countdown_end).getTime() : null;
+        responseState = 'running';
+        timeRemainingS = ceilSeconds(remainingMs);
+      }
+    }
     } else if (action === 'pause') {
       if (tournament.is_paused) {
         // Already paused — no-op
