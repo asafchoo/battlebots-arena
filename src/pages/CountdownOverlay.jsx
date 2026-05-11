@@ -110,7 +110,7 @@ export default function CountdownOverlay() {
 
   // Check if we should show last match result
   const showLastResult = tournament?.last_match_result && 
-    new Date().getTime() - new Date(tournament.last_match_result.timestamp).getTime() < 8000;
+    new Date().getTime() - new Date(tournament.last_match_result.timestamp).getTime() < 25000;
 
   const bot1 = bots.find(b => b.id === (tournament?.current_match?.bot1_id || tournament?.last_match_result?.bot1_id));
   const bot2 = bots.find(b => b.id === (tournament?.current_match?.bot2_id || tournament?.last_match_result?.bot2_id));
