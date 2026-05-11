@@ -758,8 +758,35 @@ export default function Home() {
                                   return (
                                     <button
                                      key={`${m.bracket}-${m.match_number}`}
-                                     onClick={() => {
+                                     onClick={async () => {
                                        setOverrideMatch(m);
+                                       // Reorder the bracket array so this match is first — setFightState picks [0]
+                                       let bracketUpdate = {};
+                                       if (m.bracket === 'winners') {
+                                         const others = tournament.winners_bracket.filter(bm =>
+                                           !(bm.round === m.round && bm.match_number === m.match_number)
+                                         );
+                                         const chosen = tournament.winners_bracket.find(bm =>
+                                           bm.round === m.round && bm.match_number === m.match_number
+                                         );
+                                         // Put chosen first among pending matches
+                                         const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
+                                         const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
+                                         bracketUpdate = { winners_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
+                                       } else if (m.bracket === 'losers') {
+                                         const others = tournament.losers_bracket.filter(bm =>
+                                           !(bm.round === m.round && bm.match_number === m.match_number)
+                                         );
+                                         const chosen = tournament.losers_bracket.find(bm =>
+                                           bm.round === m.round && bm.match_number === m.match_number
+                                         );
+                                         const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
+                                         const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
+                                         bracketUpdate = { losers_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
+                                       }
+                                       if (Object.keys(bracketUpdate).length > 0) {
+                                         base44.entities.Tournament.update(tournament.id, bracketUpdate);
+                                       }
                                      }}
                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                        isSelected
