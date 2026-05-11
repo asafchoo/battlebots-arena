@@ -685,8 +685,27 @@ export default function Home() {
                             <Button
                               onClick={async () => {
                                 const m = nextMatch;
-                                // Write the chosen match as current_match
+                                // Directly set current_match + start the timer in one shot
+                                // We update the bracket status manually then invoke setFightState
+                                // First mark the match as in_progress in the bracket
+                                const bracketUpdates = {};
+                                if (m.bracket === 'winners') {
+                                  bracketUpdates.winners_bracket = tournament.winners_bracket.map(bm =>
+                                    bm.round === m.round && bm.match_number === m.match_number
+                                      ? { ...bm, status: 'in_progress' } : bm
+                                  );
+                                } else if (m.bracket === 'losers') {
+                                  bracketUpdates.losers_bracket = tournament.losers_bracket.map(bm =>
+                                    bm.round === m.round && bm.match_number === m.match_number
+                                      ? { ...bm, status: 'in_progress' } : bm
+                                  );
+                                } else if (m.bracket === 'finals') {
+                                  bracketUpdates.grand_finals = { ...tournament.grand_finals, status: 'in_progress' };
+                                }
+                                const nowMs = Date.now();
+                                const countdownEndMs = nowMs + 180000;
                                 await base44.entities.Tournament.update(tournament.id, {
+                                  ...bracketUpdates,
                                   current_match: {
                                     bracket: m.bracket,
                                     round: m.round,
@@ -697,10 +716,10 @@ export default function Home() {
                                     bot1_unstuck: false,
                                     bot2_unstuck: false
                                   },
-                                  is_paused: false
+                                  is_paused: false,
+                                  paused_time_remaining: 180,
+                                  countdown_end: new Date(countdownEndMs).toISOString()
                                 });
-                                // Immediately trigger setFightState play so the timer starts
-                                await base44.functions.invoke('setFightState', { action: 'play' });
                                 queryClient.invalidateQueries({ queryKey: ['tournaments'] });
                                 setOverrideMatch(null);
                               }}
@@ -832,13 +851,15 @@ export default function Home() {
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => {
-                              base44.entities.Tournament.update(tournament.id, {
+                            onClick={async () => {
+                              await base44.entities.Tournament.update(tournament.id, {
                                 current_match: { ...cm, match_over: true },
                                 countdown_end: null,
                                 is_paused: false,
                                 paused_time_remaining: 0
-                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                              });
+                              await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                              await queryClient.refetchQueries({ queryKey: ['tournaments'] });
                             }}
                             className="text-xs bg-red-700 hover:bg-red-800 ml-4"
                           >
