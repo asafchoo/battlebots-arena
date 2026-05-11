@@ -120,8 +120,9 @@ const clientRemainingMs = Number.isFinite(clientRemainingMsRaw)
           );
         }
 
-        const remainingMs = FIGHT_DURATION_S * 1000;
-        syncTimeMs = remainingMs;
+        const remainingMs = clientRemainingMs !== null ? clientRemainingMs : FIGHT_DURATION_S * 1000;
+        const countdownEndMs = clientCountdownEndMs !== null ? clientCountdownEndMs : now + remainingMs;
+        syncTimeMs = Math.max(0, Math.min(FIGHT_DURATION_S * 1000, countdownEndMs - now));
 
         // Mark the bracket match as in_progress
         if (nextMatch.bracket === 'winners') {
