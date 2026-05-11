@@ -217,8 +217,9 @@ Deno.serve(async (req: any) => {
 
         updatePayload = {
           countdown_end: new Date(countdownEndMs).toISOString(),
-          is_paused: false,
-          paused_time_remaining: ceilSeconds(syncTimeMs),
+           is_paused: true,
+            paused_time_remaining: ceilSeconds(remainingMs),
+            paused_time_remaining_ms: remainingMs,
         };
 
         responseState = 'running';
