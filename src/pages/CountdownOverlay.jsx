@@ -9,6 +9,7 @@ export default function CountdownOverlay() {
   const [isUrgent, setIsUrgent] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const [blinkVisible, setBlinkVisible] = useState(true);
+  const [serverOffsetMs, setServerOffsetMs] = useState(0);
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
@@ -22,6 +23,29 @@ export default function CountdownOverlay() {
   });
 
   const tournament = tournaments[0];
+
+  useEffect(() => {
+  const syncServerClock = async () => {
+    try {
+      const before = Date.now();
+      const res = await fetch('/functions/getServerTime', { cache: 'no-store' });
+      const data = await res.json();
+      const after = Date.now();
+
+      if (data.server_time_ms) {
+        const roundTrip = after - before;
+        const estimatedServerNow = data.server_time_ms + roundTrip / 2;
+        setServerOffsetMs(estimatedServerNow - after);
+      }
+    } catch (err) {
+      console.error('Server clock sync error:', err);
+    }
+  };
+
+  syncServerClock();
+  const interval = setInterval(syncServerClock, 10000);
+  return () => clearInterval(interval);
+}, []);
 
   // Blink the timer when paused (0.5s on / 0.5s off)
   useEffect(() => {
@@ -67,7 +91,7 @@ export default function CountdownOverlay() {
     // If not paused, calculate from countdown_end
     const updateTimer = () => {
       const end = new Date(tournament.countdown_end).getTime();
-      const now = Date.now();
+      const now = Date.now() + serverOffsetMs;
       const diff = Math.max(0, Math.ceil((end - now) / 1000));
       setTimeLeft(diff);
       setIsUrgent(diff <= 30);
