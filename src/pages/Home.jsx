@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -397,10 +397,17 @@ export default function Home() {
     }
   };
 
-  // Clear override once a match becomes active
+  // Clear override only when a match actually starts (transitions from null to having a match)
+  const prevMatchRef = useRef(null);
   useEffect(() => {
-    if (tournament?.current_match) setOverrideMatch(null);
-  }, [tournament?.current_match?.match_number]);
+    const prevMatch = prevMatchRef.current;
+    const currMatch = tournament?.current_match;
+    // Only clear if we went from no match → match started
+    if (!prevMatch && currMatch && !currMatch.match_over) {
+      setOverrideMatch(null);
+    }
+    prevMatchRef.current = currMatch;
+  }, [tournament?.current_match]);
 
   const isLoading = botsLoading || tourneysLoading;
 
@@ -747,7 +754,7 @@ export default function Home() {
                                     <button
                                      key={`${m.bracket}-${m.match_number}`}
                                      onClick={() => {
-                                       setOverrideMatch(isSelected ? null : m);
+                                       setOverrideMatch(m);
                                      }}
                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                        isSelected
