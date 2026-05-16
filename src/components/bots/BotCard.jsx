@@ -18,7 +18,7 @@ export default function BotCard({ bot, onClick, selected, isAuthenticated }) {
 
   return (
     <Card
-      className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden bg-slate-900 border-slate-700 ${
+      className={`relative cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden bg-slate-900 border-slate-700 ${
         selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/20' : 'hover:shadow-xl'
       }`}
       onClick={onClick}
