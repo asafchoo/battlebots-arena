@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import BotCard from "@/components/bots/BotCard";
 import BotRegistrationForm from "@/components/bots/BotRegistrationForm";
+import BotDetailModal from "@/components/bots/BotDetailModal";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
 import { useAuth } from "@/lib/AuthContext";
 import {
@@ -23,6 +24,7 @@ export default function Home() {
   const isAuthenticated = !!user;
 
   const [showRegForm, setShowRegForm] = useState(false);
+  const [selectedBot, setSelectedBot] = useState(null);
   const [tournamentName, setTournamentName] = useState("Battle Bots Championship");
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
@@ -423,7 +425,7 @@ export default function Home() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {bots.map(bot => (
-                    <BotCard key={bot.id} bot={bot} isAuthenticated={isAuthenticated} />
+                    <BotCard key={bot.id} bot={bot} isAuthenticated={isAuthenticated} onClick={() => setSelectedBot(bot)} />
                   ))}
                 </div>
 
@@ -787,6 +789,7 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
+    <BotDetailModal bot={selectedBot} open={!!selectedBot} onClose={() => setSelectedBot(null)} />
     </div>
   );
 }
