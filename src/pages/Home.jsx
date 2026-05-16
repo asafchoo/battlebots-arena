@@ -12,18 +12,22 @@ import { createPageUrl } from "@/utils";
 import BotCard from "@/components/bots/BotCard";
 import BotRegistrationForm from "@/components/bots/BotRegistrationForm";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
+import { useAuth } from "@/lib/AuthContext";
 import {
   Plus, Trophy, Users, Swords, ExternalLink,
   Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw, ChevronDown
 } from "lucide-react";
 
 export default function Home() {
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+
   const [showRegForm, setShowRegForm] = useState(false);
   const [tournamentName, setTournamentName] = useState("Battle Bots Championship");
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
-  const [overrideMatch, setOverrideMatch] = useState(null); // manually selected match to run next
-  const [localMatchOver, setLocalMatchOver] = useState(null); // {bot1_id, bot2_id} when end match pressed locally
+  const [overrideMatch, setOverrideMatch] = useState(null);
+  const [localMatchOver, setLocalMatchOver] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: bots = [], isLoading: botsLoading } = useQuery({
@@ -43,129 +47,67 @@ export default function Home() {
 
   const createTournamentMutation = useMutation({
     mutationFn: async () => {
-      // Reset all bots to active
       const botPromises = bots.map(bot => 
         base44.entities.Bot.update(bot.id, { status: 'active', seed: null })
       );
       await Promise.all(botPromises);
 
-      // Generate brackets
       const shuffledBots = [...bots].sort(() => Math.random() - 0.5);
       const numBots = shuffledBots.length;
-      
-      // Calculate next power of 2
       const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(numBots)));
       const numByes = nextPowerOf2 - numBots;
-      
-      console.log(`Creating tournament for ${numBots} bots (${nextPowerOf2} bracket, ${numByes} BYEs)`);
-      
-      // Build winners bracket with proper BYE handling
+
       const winners_bracket = [];
       let matchNum = 1;
-      
-      // Round 1 - pair bots and assign BYEs
       const round1Matches = nextPowerOf2 / 2;
       const botsWithByes = [...shuffledBots];
-      
-      // Add virtual BYE placeholders
-      for (let i = 0; i < numByes; i++) {
-        botsWithByes.push(null); // null = BYE
-      }
-      
-      // Shuffle again to distribute BYEs randomly
+      for (let i = 0; i < numByes; i++) botsWithByes.push(null);
       const shuffledWithByes = [...botsWithByes].sort(() => Math.random() - 0.5);
-      
-      // Create R1 matches
+
       for (let i = 0; i < round1Matches; i++) {
         const bot1 = shuffledWithByes[i * 2];
         const bot2 = shuffledWithByes[i * 2 + 1];
-        
-        // Determine winner if there's a BYE
         let winner_id = null;
         let status = 'pending';
-        
-        if (!bot1 && bot2) {
-          winner_id = bot2.id;
-          status = 'complete';
-        } else if (bot1 && !bot2) {
-          winner_id = bot1.id;
-          status = 'complete';
-        }
-        
+        if (!bot1 && bot2) { winner_id = bot2.id; status = 'complete'; }
+        else if (bot1 && !bot2) { winner_id = bot1.id; status = 'complete'; }
         winners_bracket.push({
-          round: 1,
-          match_number: matchNum++,
-          bot1_id: bot1?.id || null,
-          bot2_id: bot2?.id || null,
-          winner_id,
-          status
+          round: 1, match_number: matchNum++,
+          bot1_id: bot1?.id || null, bot2_id: bot2?.id || null,
+          winner_id, status
         });
       }
 
-      // Generate subsequent winner rounds (empty, will be filled as matches complete)
       let prevRoundMatches = round1Matches;
       let currentRound = 2;
       while (prevRoundMatches > 1) {
         const thisRoundMatches = prevRoundMatches / 2;
         for (let i = 0; i < thisRoundMatches; i++) {
-          winners_bracket.push({
-            round: currentRound,
-            match_number: matchNum++,
-            bot1_id: null,
-            bot2_id: null,
-            winner_id: null,
-            status: 'pending'
-          });
+          winners_bracket.push({ round: currentRound, match_number: matchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
         prevRoundMatches = thisRoundMatches;
         currentRound++;
       }
 
-      // Build losers bracket structure
-      // LB structure for double elimination:
-      // WB Round 1 losers → LB Round 1 (round1Matches/2 matches)
-      // LB Round 2: LB R1 winners vs WB Round 2 losers (round1Matches/2 matches)
-      // LB Round 3: LB R2 winners fight each other (round1Matches/4 matches)
-      // LB Round 4: LB R3 winners vs WB Round 3 losers...
-      // Pattern: odd rounds = survivors fight each other (halving), even rounds = new WB losers join
       const losers_bracket = [];
-      const totalWinnerRounds = currentRound - 1; // how many WB rounds
-      const losersRounds = (totalWinnerRounds - 1) * 2; // LB rounds
+      const totalWinnerRounds = currentRound - 1;
+      const losersRounds = (totalWinnerRounds - 1) * 2;
       let losersMatchNum = 1;
       let lbMatchCount = round1Matches / 2;
 
       for (let r = 1; r <= losersRounds; r++) {
         for (let m = 0; m < lbMatchCount; m++) {
-          losers_bracket.push({
-            round: r,
-            match_number: losersMatchNum++,
-            bot1_id: null,
-            bot2_id: null,
-            winner_id: null,
-            status: 'pending'
-          });
+          losers_bracket.push({ round: r, match_number: losersMatchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
-        // Odd rounds: halve (survivors fight each other next)
-        // Even rounds: keep same count (new WB losers join)
-        if (r % 2 === 1) {
-          lbMatchCount = Math.ceil(lbMatchCount / 2);
-        }
+        if (r % 2 === 1) lbMatchCount = Math.ceil(lbMatchCount / 2);
       }
 
       const newTournament = await base44.entities.Tournament.create({
-        name: tournamentName,
-        status: 'in_progress',
-        winners_bracket,
-        losers_bracket,
-        grand_finals: {
-          bot1_id: null,
-          bot2_id: null,
-          winner_id: null,
-          status: 'pending'
-        },
+        name: tournamentName, status: 'in_progress',
+        winners_bracket, losers_bracket,
+        grand_finals: { bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' },
         current_match: null
       });
-
       return newTournament;
     },
     onSuccess: () => {
@@ -177,139 +119,71 @@ export default function Home() {
   const selectWinnerMutation = useMutation({
     mutationFn: async (winnerId) => {
       if (!tournament?.current_match) return;
-      
       const { bracket, round, match_number } = tournament.current_match;
-      const loserId = tournament.current_match.bot1_id === winnerId 
-        ? tournament.current_match.bot2_id 
+      const loserId = tournament.current_match.bot1_id === winnerId
+        ? tournament.current_match.bot2_id
         : tournament.current_match.bot1_id;
 
       let updates = {};
-      
+
       if (bracket === 'winners') {
         const newWinners = tournament.winners_bracket.map(m => {
-          if (m.round === round && m.match_number === match_number) {
-            return { ...m, winner_id: winnerId, status: 'complete' };
-          }
+          if (m.round === round && m.match_number === match_number) return { ...m, winner_id: winnerId, status: 'complete' };
           return m;
         });
-        
-        // Advance winner to next round
         const nextRound = round + 1;
-        // Find the index of this match within its round (0-based)
         const matchesInCurrentRound = newWinners.filter(m => m.round === round).sort((a, b) => a.match_number - b.match_number);
         const matchIndexInRound = matchesInCurrentRound.findIndex(m => m.match_number === match_number);
-        
-        console.log('=== WINNERS BRACKET ADVANCEMENT ===');
-        console.log('Current match:', { round, match_number, winnerId, loserId });
-        console.log('Matches in current round:', matchesInCurrentRound.map(m => ({ round: m.round, match_number: m.match_number })));
-        console.log('Match index in round:', matchIndexInRound);
-        
-        // Calculate which match in next round and which slot
         const matchesInNextRound = newWinners.filter(m => m.round === nextRound).sort((a, b) => a.match_number - b.match_number);
         const nextMatchIndex = Math.floor(matchIndexInRound / 2);
         const nextMatch = matchesInNextRound[nextMatchIndex];
         const isFirstSlot = matchIndexInRound % 2 === 0;
-        
-        console.log('Next round matches:', matchesInNextRound.map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
-        console.log('Next match index:', nextMatchIndex);
-        console.log('Next match:', nextMatch);
-        console.log('Is first slot:', isFirstSlot);
-        
+
         const advancedWinners = newWinners.map(m => {
           if (nextMatch && m.round === nextRound && m.match_number === nextMatch.match_number) {
-            console.log('✓ Updating match', m.match_number, 'in round', nextRound, 'with winner', winnerId, 'in slot', isFirstSlot ? 'bot1' : 'bot2');
-            return {
-              ...m,
-              [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId
-            };
+            return { ...m, [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId };
           }
           return m;
         });
-        
-        console.log('Advanced winners bracket:', advancedWinners.filter(m => m.round === nextRound).map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
-        
         updates.winners_bracket = advancedWinners;
 
-        // If no next WB match, this is the WB finalist → goes to Grand Finals bot1
         if (!nextMatch) {
-          updates.grand_finals = {
-            ...tournament.grand_finals,
-            bot1_id: winnerId
-          };
+          updates.grand_finals = { ...tournament.grand_finals, bot1_id: winnerId };
         }
-        
-        // Move loser to correct LB round
-        // WB Round 1 losers → LB Round 1
-        // WB Round 2 losers → LB Round 2
-        // WB Round 3 losers → LB Round 4
-        // WB Round N losers → LB Round (N-1)*2  (except WB R1 → LB R1)
+
         const lbRoundForLoser = round === 1 ? 1 : (round - 1) * 2;
-        console.log('=== LOSERS BRACKET PLACEMENT ===');
-        console.log('WB round:', round, '→ LB round:', lbRoundForLoser);
-        const targetLoserMatch = (updates.losers_bracket || tournament.losers_bracket).find(m => 
-          m.round === lbRoundForLoser && 
-          (!m.bot1_id || !m.bot2_id) &&
-          m.bot1_id !== loserId && 
-          m.bot2_id !== loserId
+        const targetLoserMatch = (updates.losers_bracket || tournament.losers_bracket).find(m =>
+          m.round === lbRoundForLoser && (!m.bot1_id || !m.bot2_id) &&
+          m.bot1_id !== loserId && m.bot2_id !== loserId
         );
-        console.log('Target loser match:', targetLoserMatch);
-        
         if (targetLoserMatch) {
           updates.losers_bracket = tournament.losers_bracket.map(m => {
             if (m.round === targetLoserMatch.round && m.match_number === targetLoserMatch.match_number) {
-              if (!m.bot1_id) {
-                const updated = { ...m, bot1_id: loserId };
-                // mark ready if now both slots filled
-                if (m.bot2_id) updated.ready_since = new Date().toISOString();
-                return updated;
-              } else if (!m.bot2_id && m.bot1_id !== loserId) {
-                return { ...m, bot2_id: loserId, ready_since: new Date().toISOString() };
-              }
+              if (!m.bot1_id) { const updated = { ...m, bot1_id: loserId }; if (m.bot2_id) updated.ready_since = new Date().toISOString(); return updated; }
+              else if (!m.bot2_id && m.bot1_id !== loserId) return { ...m, bot2_id: loserId, ready_since: new Date().toISOString() };
             }
             return m;
           });
-          console.log('Updated losers bracket R1:', updates.losers_bracket.filter(m => m.round === 1).map(m => ({ round: m.round, match_number: m.match_number, bot1_id: m.bot1_id, bot2_id: m.bot2_id })));
-        } else {
-          console.log('⚠️ No target loser match found!');
         }
       } else if (bracket === 'losers') {
         const newLosers = tournament.losers_bracket.map(m => {
-          if (m.round === round && m.match_number === match_number) {
-            return { ...m, winner_id: winnerId, status: 'complete' };
-          }
+          if (m.round === round && m.match_number === match_number) return { ...m, winner_id: winnerId, status: 'complete' };
           return m;
         });
-        
-        // Check if this is the last LB match
         const maxLBRound = Math.max(...tournament.losers_bracket.map(m => m.round));
         const isLastLoserMatch = round === maxLBRound;
-
         if (isLastLoserMatch) {
-          // Advance to grand finals as bot2
-          const winnersFinalWinner = tournament.winners_bracket
-            .filter(m => m.status === 'complete')
-            .sort((a, b) => b.round - a.round)[0]?.winner_id;
-          updates.grand_finals = {
-            ...tournament.grand_finals,
-            bot2_id: winnerId,
-            bot1_id: winnersFinalWinner || tournament.grand_finals?.bot1_id || null
-          };
+          const winnersFinalWinner = tournament.winners_bracket.filter(m => m.status === 'complete').sort((a, b) => b.round - a.round)[0]?.winner_id;
+          updates.grand_finals = { ...tournament.grand_finals, bot2_id: winnerId, bot1_id: winnersFinalWinner || tournament.grand_finals?.bot1_id || null };
           updates.losers_bracket = newLosers;
         } else {
-          // Advance winner to next LB round
           const nextRound = round + 1;
-          // Find a slot in the next round that has an open spot
-          const nextLoserMatch = newLosers.find(m => 
-            m.round === nextRound && (!m.bot1_id || !m.bot2_id) &&
-            m.bot1_id !== winnerId && m.bot2_id !== winnerId
-          );
-          
+          const nextLoserMatch = newLosers.find(m => m.round === nextRound && (!m.bot1_id || !m.bot2_id) && m.bot1_id !== winnerId && m.bot2_id !== winnerId);
           if (nextLoserMatch) {
             updates.losers_bracket = newLosers.map(m => {
               if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
                 const slot = !m.bot1_id ? 'bot1_id' : 'bot2_id';
                 const updated = { ...m, [slot]: winnerId };
-                // mark ready when second bot fills in
                 if (slot === 'bot2_id' || m.bot2_id) updated.ready_since = new Date().toISOString();
                 return updated;
               }
@@ -319,41 +193,24 @@ export default function Home() {
             updates.losers_bracket = newLosers;
           }
         }
-        
-        // Eliminate the loser
         await base44.entities.Bot.update(loserId, { status: 'eliminated' });
       } else if (bracket === 'finals') {
-        updates.grand_finals = {
-          ...tournament.grand_finals,
-          winner_id: winnerId,
-          status: 'complete'
-        };
+        updates.grand_finals = { ...tournament.grand_finals, winner_id: winnerId, status: 'complete' };
         await base44.entities.Bot.update(winnerId, { status: 'champion' });
         await base44.entities.Bot.update(loserId, { status: 'eliminated' });
         updates.status = 'completed';
       }
 
-      // Store last match result for overlay
       updates.last_match_result = {
         bot1_id: tournament.current_match.bot1_id,
         bot2_id: tournament.current_match.bot2_id,
         winner_id: winnerId,
         timestamp: new Date().toISOString()
       };
-      
-      // Set winner_id on current_match before clearing it
-      updates.current_match = {
-        ...tournament.current_match,
-        winner_id: winnerId
-      };
-      
+      updates.current_match = { ...tournament.current_match, winner_id: winnerId };
       await base44.entities.Tournament.update(tournament.id, updates);
-      
-      // Clear current_match after 5 seconds to allow overlay to show winner
       setTimeout(async () => {
-        await base44.entities.Tournament.update(tournament.id, { 
-          current_match: null
-        });
+        await base44.entities.Tournament.update(tournament.id, { current_match: null });
         queryClient.invalidateQueries({ queryKey: ['tournaments'] });
       }, 5000);
     },
@@ -365,16 +222,9 @@ export default function Home() {
 
   const resetTournamentMutation = useMutation({
     mutationFn: async () => {
-      // Reset all bots to registered status
-      const botPromises = bots.map(bot => 
-        base44.entities.Bot.update(bot.id, { status: 'registered', seed: null })
-      );
+      const botPromises = bots.map(bot => base44.entities.Bot.update(bot.id, { status: 'registered', seed: null }));
       await Promise.all(botPromises);
-
-      // Delete all tournaments
-      if (tournament) {
-        await base44.entities.Tournament.delete(tournament.id);
-      }
+      if (tournament) await base44.entities.Tournament.delete(tournament.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
@@ -390,33 +240,21 @@ export default function Home() {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yy = String(today.getFullYear()).slice(-2);
     const expectedPassword = `battlebot${dd}${mm}${yy}`;
-    
-    if (resetPassword === expectedPassword) {
-      resetTournamentMutation.mutate();
-    } else {
-      alert("Incorrect password!");
-    }
+    if (resetPassword === expectedPassword) resetTournamentMutation.mutate();
+    else alert("Incorrect password!");
   };
 
-  // Clear override only when a match actually starts (transitions from null to having a match)
   const prevMatchRef = useRef(null);
   useEffect(() => {
     const prevMatch = prevMatchRef.current;
     const currMatch = tournament?.current_match;
-    // Only clear if we went from no match → match started
-    if (!prevMatch && currMatch && !currMatch.match_over) {
-      setOverrideMatch(null);
-    }
-    // Clear localMatchOver when current_match is cleared (after winner selected)
-    if (!currMatch) {
-      setLocalMatchOver(null);
-    }
+    if (!prevMatch && currMatch && !currMatch.match_over) setOverrideMatch(null);
+    if (!currMatch) setLocalMatchOver(null);
     prevMatchRef.current = currMatch;
   }, [tournament?.current_match]);
 
   const isLoading = botsLoading || tourneysLoading;
 
-  // All matches that are ready to fight (both bots assigned, status pending), sorted by wait time
   const getReadyMatches = () => {
     if (!tournament) return [];
     const allMatches = [
@@ -426,7 +264,6 @@ export default function Home() {
     const ready = allMatches
       .filter(m => m.status === 'pending' && m.bot1_id && m.bot2_id)
       .sort((a, b) => {
-        // Sort by ready_since ascending (longest waiting first); fallback to match_number
         if (a.ready_since && b.ready_since) return new Date(a.ready_since) - new Date(b.ready_since);
         if (a.ready_since) return -1;
         if (b.ready_since) return 1;
@@ -451,18 +288,13 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-        
         <div className="relative max-w-7xl mx-auto px-4 py-12">
           <div className="text-center space-y-4">
             <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
               BATTLE BOTS
             </h1>
-            <p className="text-xl text-slate-400 tracking-widest uppercase">
-              Double Elimination Tournament
-            </p>
+            <p className="text-xl text-slate-400 tracking-widest uppercase">Double Elimination Tournament</p>
           </div>
-
-          {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <Card className="bg-slate-900/50 border-slate-700 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
@@ -481,18 +313,13 @@ export default function Home() {
             <Card className="bg-slate-900/50 border-slate-700 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <Trophy className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  {tournament?.status === 'completed' ? '1' : '0'}
-                </div>
+                <div className="text-2xl font-bold text-white">{tournament?.status === 'completed' ? '1' : '0'}</div>
                 <div className="text-xs text-slate-500 uppercase">Champion</div>
               </CardContent>
             </Card>
             <Card className="bg-slate-900/50 border-slate-700 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
-                <Badge className={`${
-                  tournament?.status === 'in_progress' ? 'bg-green-500' : 
-                  tournament?.status === 'completed' ? 'bg-purple-500' : 'bg-orange-500'
-                }`}>
+                <Badge className={`${tournament?.status === 'in_progress' ? 'bg-green-500' : tournament?.status === 'completed' ? 'bg-purple-500' : 'bg-orange-500'}`}>
                   {tournament?.status?.replace('_', ' ').toUpperCase() || 'REGISTRATION'}
                 </Badge>
               </CardContent>
@@ -506,7 +333,7 @@ export default function Home() {
           <TabsList className="bg-slate-800/50">
             <TabsTrigger value="registration">Registration</TabsTrigger>
             <TabsTrigger value="bracket">Tournament Bracket</TabsTrigger>
-            <TabsTrigger value="overlays">OBS Overlays</TabsTrigger>
+            {isAuthenticated && <TabsTrigger value="overlays">OBS Overlays</TabsTrigger>}
           </TabsList>
 
           {/* Registration Tab */}
@@ -514,7 +341,7 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">Registered Bots</h2>
               <div className="flex gap-3">
-                {(!tournament || tournament.status !== 'in_progress') && (
+                {isAuthenticated && (!tournament || tournament.status !== 'in_progress') && (
                   <Dialog open={showRegForm} onOpenChange={setShowRegForm}>
                     <DialogTrigger asChild>
                       <Button className="bg-gradient-to-r from-cyan-500 to-purple-600">
@@ -534,7 +361,7 @@ export default function Home() {
                   </Dialog>
                 )}
 
-                {bots.length >= 2 && (!tournament || tournament.status === 'completed') && (
+                {isAuthenticated && bots.length >= 2 && (!tournament || tournament.status === 'completed') && (
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="border-cyan-500 text-cyan-400 hover:bg-cyan-500/10">
@@ -549,7 +376,7 @@ export default function Home() {
                       <div className="space-y-4 pt-4">
                         <div>
                           <label className="text-sm text-slate-400">Tournament Name</label>
-                          <Input 
+                          <Input
                             value={tournamentName}
                             onChange={(e) => setTournamentName(e.target.value)}
                             className="bg-slate-800 border-slate-600 text-white mt-1"
@@ -557,18 +384,14 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-2 p-3 bg-slate-800 rounded-lg">
                           <AlertCircle className="w-5 h-5 text-orange-400" />
-                          <span className="text-sm text-slate-300">
-                            This will generate brackets for {bots.length} bots
-                          </span>
+                          <span className="text-sm text-slate-300">This will generate brackets for {bots.length} bots</span>
                         </div>
-                        <Button 
+                        <Button
                           onClick={() => createTournamentMutation.mutate()}
                           disabled={createTournamentMutation.isPending}
                           className="w-full bg-gradient-to-r from-cyan-500 to-purple-600"
                         >
-                          {createTournamentMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          ) : null}
+                          {createTournamentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                           Generate Brackets & Start
                         </Button>
                       </div>
@@ -588,10 +411,12 @@ export default function Home() {
                   <Swords className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No Bots Registered</h3>
                   <p className="text-slate-400 mb-4">Start by registering your first battle bot!</p>
-                  <Button onClick={() => setShowRegForm(true)} className="bg-cyan-500 hover:bg-cyan-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Register First Bot
-                  </Button>
+                  {isAuthenticated && (
+                    <Button onClick={() => setShowRegForm(true)} className="bg-cyan-500 hover:bg-cyan-600">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Register First Bot
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -601,8 +426,8 @@ export default function Home() {
                     <BotCard key={bot.id} bot={bot} />
                   ))}
                 </div>
-                
-                {tournament && (
+
+                {isAuthenticated && tournament && (
                   <div className="mt-8 pt-8 border-t border-slate-700">
                     <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
                       <DialogTrigger asChild>
@@ -620,9 +445,6 @@ export default function Home() {
                             <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
                             <div className="space-y-2">
                               <p className="text-red-300 font-semibold">This action cannot be undone!</p>
-                              <p className="text-sm text-red-400">
-                                This will permanently delete:
-                              </p>
                               <ul className="text-sm text-red-400 list-disc list-inside space-y-1">
                                 <li>All tournament progress and results</li>
                                 <li>All match history</li>
@@ -632,7 +454,7 @@ export default function Home() {
                           </div>
                           <div>
                             <label className="text-sm text-slate-400 font-semibold">Enter Password to Confirm</label>
-                            <Input 
+                            <Input
                               type="password"
                               value={resetPassword}
                               onChange={(e) => setResetPassword(e.target.value)}
@@ -640,18 +462,14 @@ export default function Home() {
                               className="bg-slate-800 border-slate-600 text-white mt-2"
                               onKeyDown={(e) => e.key === 'Enter' && handleResetConfirm()}
                             />
-                            <p className="text-xs text-slate-500 mt-1">
-                              Format: battlebot + today's date (e.g., battlebot150225)
-                            </p>
+                            <p className="text-xs text-slate-500 mt-1">Format: battlebot + today's date (e.g., battlebot150225)</p>
                           </div>
-                          <Button 
+                          <Button
                             onClick={handleResetConfirm}
                             disabled={resetTournamentMutation.isPending || !resetPassword}
                             className="w-full bg-red-600 hover:bg-red-700"
                           >
-                            {resetTournamentMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            ) : null}
+                            {resetTournamentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                             Yes, Reset Everything
                           </Button>
                         </div>
@@ -667,12 +485,10 @@ export default function Home() {
           <TabsContent value="bracket">
             {tournament ? (
               <div className="space-y-4">
-                {/* Match State Panel — shown only when tournament is running */}
                 {tournament.status === 'in_progress' && (() => {
                   const cm = tournament.current_match;
 
                   if (!cm) {
-                    // Waiting state — show next match preview + manual override picker
                     const readyMatches = getReadyMatches();
                     const nextMatch = overrideMatch || readyMatches[0];
                     if (!nextMatch) return null;
@@ -693,57 +509,50 @@ export default function Home() {
                             <span className="text-slate-500 text-base">VS</span>
                             <span>{nb2?.name || 'TBD'}</span>
                           </div>
-                          <div className="flex justify-center">
-                            <Button
-                              onClick={async () => {
-                                const m = nextMatch;
-                                // Directly set current_match + start the timer in one shot
-                                // We update the bracket status manually then invoke setFightState
-                                // First mark the match as in_progress in the bracket
-                                const bracketUpdates = {};
-                                if (m.bracket === 'winners') {
-                                  bracketUpdates.winners_bracket = tournament.winners_bracket.map(bm =>
-                                    bm.round === m.round && bm.match_number === m.match_number
-                                      ? { ...bm, status: 'in_progress' } : bm
-                                  );
-                                } else if (m.bracket === 'losers') {
-                                  bracketUpdates.losers_bracket = tournament.losers_bracket.map(bm =>
-                                    bm.round === m.round && bm.match_number === m.match_number
-                                      ? { ...bm, status: 'in_progress' } : bm
-                                  );
-                                } else if (m.bracket === 'finals') {
-                                  bracketUpdates.grand_finals = { ...tournament.grand_finals, status: 'in_progress' };
-                                }
-                                const nowMs = Date.now();
-                                const countdownEndMs = nowMs + 180000;
-                                await base44.entities.Tournament.update(tournament.id, {
-                                  ...bracketUpdates,
-                                  current_match: {
-                                    bracket: m.bracket,
-                                    round: m.round,
-                                    match_number: m.match_number,
-                                    bot1_id: m.bot1_id,
-                                    bot2_id: m.bot2_id,
-                                    match_over: false,
-                                    bot1_unstuck: false,
-                                    bot2_unstuck: false
-                                  },
-                                  is_paused: false,
-                                  paused_time_remaining: 180,
-                                  countdown_end: new Date(countdownEndMs).toISOString()
-                                });
-                                queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-                                setOverrideMatch(null);
-                              }}
-                              className="bg-green-600 hover:bg-green-700 font-bold px-8"
-                            >
-                              ▶ Start Match
-                            </Button>
-                          </div>
+
+                          {isAuthenticated && (
+                            <div className="flex justify-center">
+                              <Button
+                                onClick={async () => {
+                                  const m = nextMatch;
+                                  const bracketUpdates = {};
+                                  if (m.bracket === 'winners') {
+                                    bracketUpdates.winners_bracket = tournament.winners_bracket.map(bm =>
+                                      bm.round === m.round && bm.match_number === m.match_number ? { ...bm, status: 'in_progress' } : bm
+                                    );
+                                  } else if (m.bracket === 'losers') {
+                                    bracketUpdates.losers_bracket = tournament.losers_bracket.map(bm =>
+                                      bm.round === m.round && bm.match_number === m.match_number ? { ...bm, status: 'in_progress' } : bm
+                                    );
+                                  } else if (m.bracket === 'finals') {
+                                    bracketUpdates.grand_finals = { ...tournament.grand_finals, status: 'in_progress' };
+                                  }
+                                  const nowMs = Date.now();
+                                  const countdownEndMs = nowMs + 180000;
+                                  await base44.entities.Tournament.update(tournament.id, {
+                                    ...bracketUpdates,
+                                    current_match: {
+                                      bracket: m.bracket, round: m.round, match_number: m.match_number,
+                                      bot1_id: m.bot1_id, bot2_id: m.bot2_id,
+                                      match_over: false, bot1_unstuck: false, bot2_unstuck: false
+                                    },
+                                    is_paused: false,
+                                    paused_time_remaining: 180,
+                                    countdown_end: new Date(countdownEndMs).toISOString()
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+                                  setOverrideMatch(null);
+                                }}
+                                className="bg-green-600 hover:bg-green-700 font-bold px-8"
+                              >
+                                ▶ Start Match
+                              </Button>
+                            </div>
+                          )}
+
                           <p className="text-center text-slate-400 text-xs">Or press the green button on the controller</p>
 
-                          {/* Manual override — show other ready matches */}
-                          {readyMatches.length > 1 && (
+                          {isAuthenticated && readyMatches.length > 1 && (
                             <div className="pt-2 border-t border-slate-700">
                               <p className="text-xs text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                 <ChevronDown className="w-3 h-3" /> Prioritize a different match
@@ -757,42 +566,28 @@ export default function Home() {
                                     : idx === 0;
                                   return (
                                     <button
-                                     key={`${m.bracket}-${m.match_number}`}
-                                     onClick={async () => {
-                                       setOverrideMatch(m);
-                                       // Reorder the bracket array so this match is first — setFightState picks [0]
-                                       let bracketUpdate = {};
-                                       if (m.bracket === 'winners') {
-                                         const others = tournament.winners_bracket.filter(bm =>
-                                           !(bm.round === m.round && bm.match_number === m.match_number)
-                                         );
-                                         const chosen = tournament.winners_bracket.find(bm =>
-                                           bm.round === m.round && bm.match_number === m.match_number
-                                         );
-                                         // Put chosen first among pending matches
-                                         const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
-                                         const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
-                                         bracketUpdate = { winners_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
-                                       } else if (m.bracket === 'losers') {
-                                         const others = tournament.losers_bracket.filter(bm =>
-                                           !(bm.round === m.round && bm.match_number === m.match_number)
-                                         );
-                                         const chosen = tournament.losers_bracket.find(bm =>
-                                           bm.round === m.round && bm.match_number === m.match_number
-                                         );
-                                         const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
-                                         const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
-                                         bracketUpdate = { losers_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
-                                       }
-                                       if (Object.keys(bracketUpdate).length > 0) {
-                                         base44.entities.Tournament.update(tournament.id, bracketUpdate);
-                                       }
-                                     }}
-                                     className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
-                                       isSelected
-                                         ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300'
-                                         : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                                     }`}
+                                      key={`${m.bracket}-${m.match_number}`}
+                                      onClick={async () => {
+                                        setOverrideMatch(m);
+                                        let bracketUpdate = {};
+                                        if (m.bracket === 'winners') {
+                                          const others = tournament.winners_bracket.filter(bm => !(bm.round === m.round && bm.match_number === m.match_number));
+                                          const chosen = tournament.winners_bracket.find(bm => bm.round === m.round && bm.match_number === m.match_number);
+                                          const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
+                                          const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
+                                          bracketUpdate = { winners_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
+                                        } else if (m.bracket === 'losers') {
+                                          const others = tournament.losers_bracket.filter(bm => !(bm.round === m.round && bm.match_number === m.match_number));
+                                          const chosen = tournament.losers_bracket.find(bm => bm.round === m.round && bm.match_number === m.match_number);
+                                          const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
+                                          const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
+                                          bracketUpdate = { losers_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
+                                        }
+                                        if (Object.keys(bracketUpdate).length > 0) base44.entities.Tournament.update(tournament.id, bracketUpdate);
+                                      }}
+                                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
+                                        isSelected ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                                      }`}
                                     >
                                       <span className="font-semibold">{b1?.name || '?'} vs {b2?.name || '?'}</span>
                                       <span className="text-xs opacity-60 ml-2 uppercase">
@@ -811,7 +606,6 @@ export default function Home() {
                   }
 
                   if (cm.match_over || localMatchOver) {
-                    // Match ended — prompt winner selection
                     const matchData = localMatchOver || cm;
                     const b1 = bots.find(b => b.id === matchData.bot1_id);
                     const b2 = bots.find(b => b.id === matchData.bot2_id);
@@ -819,32 +613,31 @@ export default function Home() {
                       <Card className="bg-yellow-950/40 border-yellow-500/60">
                         <CardContent className="py-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-yellow-400 font-bold tracking-widest uppercase text-sm">
-                              ⚡ Match Ended — Select Winner
-                            </span>
+                            <span className="text-yellow-400 font-bold tracking-widest uppercase text-sm">⚡ Match Ended — Select Winner</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Button
-                              onClick={() => selectWinnerMutation.mutate(matchData.bot1_id)}
-                              disabled={selectWinnerMutation.isPending}
-                              className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-base font-bold py-6"
-                            >
-                              {b1?.name || 'Bot 1'}
-                            </Button>
-                            <Button
-                              onClick={() => selectWinnerMutation.mutate(matchData.bot2_id)}
-                              disabled={selectWinnerMutation.isPending}
-                              className="flex-1 bg-purple-600 hover:bg-purple-700 text-base font-bold py-6"
-                            >
-                              {b2?.name || 'Bot 2'}
-                            </Button>
-                          </div>
+                          {isAuthenticated && (
+                            <div className="flex items-center gap-3">
+                              <Button
+                                onClick={() => selectWinnerMutation.mutate(matchData.bot1_id)}
+                                disabled={selectWinnerMutation.isPending}
+                                className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-base font-bold py-6"
+                              >
+                                {b1?.name || 'Bot 1'}
+                              </Button>
+                              <Button
+                                onClick={() => selectWinnerMutation.mutate(matchData.bot2_id)}
+                                disabled={selectWinnerMutation.isPending}
+                                className="flex-1 bg-purple-600 hover:bg-purple-700 text-base font-bold py-6"
+                              >
+                                {b2?.name || 'Bot 2'}
+                              </Button>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
                   }
 
-                  // Live / Paused state
                   const b1 = bots.find(b => b.id === cm.bot1_id);
                   const b2 = bots.find(b => b.id === cm.bot2_id);
                   return (
@@ -865,54 +658,51 @@ export default function Home() {
                           <span className="text-slate-500 text-base">VS</span>
                           <span>{b2?.name || 'TBD'}</span>
                         </div>
-                        <div className="flex items-center justify-center gap-3 flex-wrap">
-                          <span className="text-slate-400 text-sm">Unstuck:</span>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              base44.entities.Tournament.update(tournament.id, {
-                                current_match: { ...cm, bot1_unstuck: !cm.bot1_unstuck }
-                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
-                            }}
-                            className={`text-xs ${cm.bot1_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
-                          >
-                            {b1?.name || 'Bot 1'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              base44.entities.Tournament.update(tournament.id, {
-                                current_match: { ...cm, bot2_unstuck: !cm.bot2_unstuck }
-                              }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
-                            }}
-                            className={`text-xs ${cm.bot2_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
-                          >
-                            {b2?.name || 'Bot 2'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              // Set local state immediately so UI switches right away
-                              setLocalMatchOver({ bot1_id: cm.bot1_id, bot2_id: cm.bot2_id });
-                              // Also persist to DB (best-effort, ESP32 may overwrite but local state holds)
-                              base44.entities.Tournament.update(tournament.id, {
-                                current_match: { ...cm, match_over: true },
-                                countdown_end: null,
-                                is_paused: false,
-                                paused_time_remaining: 0
-                              });
-                            }}
-                            className="text-xs bg-red-700 hover:bg-red-800 ml-4"
-                          >
-                            ■ End Match
-                          </Button>
-                        </div>
+                        {isAuthenticated && (
+                          <div className="flex items-center justify-center gap-3 flex-wrap">
+                            <span className="text-slate-400 text-sm">Unstuck:</span>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                base44.entities.Tournament.update(tournament.id, {
+                                  current_match: { ...cm, bot1_unstuck: !cm.bot1_unstuck }
+                                }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                              }}
+                              className={`text-xs ${cm.bot1_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            >
+                              {b1?.name || 'Bot 1'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                base44.entities.Tournament.update(tournament.id, {
+                                  current_match: { ...cm, bot2_unstuck: !cm.bot2_unstuck }
+                                }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                              }}
+                              className={`text-xs ${cm.bot2_unstuck ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            >
+                              {b2?.name || 'Bot 2'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={async () => {
+                                setLocalMatchOver({ bot1_id: cm.bot1_id, bot2_id: cm.bot2_id });
+                                base44.entities.Tournament.update(tournament.id, {
+                                  current_match: { ...cm, match_over: true },
+                                  countdown_end: null, is_paused: false, paused_time_remaining: 0
+                                });
+                              }}
+                              className="text-xs bg-red-700 hover:bg-red-800 ml-4"
+                            >
+                              ■ End Match
+                            </Button>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
                 })()}
 
-                {/* Bracket visualization */}
                 <Card className="bg-slate-900/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center justify-between">
@@ -929,7 +719,7 @@ export default function Home() {
                       tournament={tournament}
                       bots={bots}
                       onSelectWinner={(winnerId) => selectWinnerMutation.mutate(winnerId)}
-                      showControls={true}
+                      showControls={isAuthenticated}
                     />
                   </CardContent>
                 </Card>
@@ -960,9 +750,7 @@ export default function Home() {
                     Complete cyberpunk-styled bracket view showing both winners and losers brackets with the next match highlighted.
                   </p>
                   <div className="aspect-video bg-slate-800 rounded-lg overflow-hidden relative">
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-600">
-                      Preview
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-600">Preview</div>
                   </div>
                   <Link to={createPageUrl("BracketOverlay")}>
                     <Button className="w-full bg-cyan-500 hover:bg-cyan-600">
@@ -985,9 +773,7 @@ export default function Home() {
                     Minimalist overlay showing current match combatants with a 3-minute countdown timer.
                   </p>
                   <div className="aspect-video bg-slate-800 rounded-lg overflow-hidden relative">
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-600">
-                      Preview
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-600">Preview</div>
                   </div>
                   <Link to={createPageUrl("CountdownOverlay")}>
                     <Button className="w-full bg-purple-500 hover:bg-purple-600">
