@@ -15,9 +15,10 @@ export default function BotCard({ bot, onClick, selected }) {
       queryClient.invalidateQueries({ queryKey: ['bots'] });
     }
   });
+
   return (
-    <Card 
-      className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden ${
+    <Card
+      className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] overflow-hidden bg-slate-900 border-slate-700 ${
         selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/20' : 'hover:shadow-xl'
       }`}
       onClick={onClick}
@@ -27,21 +28,16 @@ export default function BotCard({ bot, onClick, selected }) {
         variant="ghost"
         onClick={(e) => {
           e.stopPropagation();
-          if (confirm(`Delete ${bot.name}?`)) {
-            deleteBotMutation.mutate();
-          }
+          if (confirm(`Delete ${bot.name}?`)) deleteBotMutation.mutate();
         }}
         className="absolute top-2 left-2 z-10 h-7 w-7 bg-red-500/90 hover:bg-red-600 text-white"
       >
         <X className="w-4 h-4" />
       </Button>
-      <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800">
+
+      <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
         {bot.image_url ? (
-          <img 
-            src={bot.image_url} 
-            alt={bot.name} 
-            className="w-full h-full object-cover"
-          />
+          <img src={bot.image_url} alt={bot.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Swords className="w-16 h-16 text-slate-600" />
@@ -58,24 +54,33 @@ export default function BotCard({ bot, onClick, selected }) {
           </div>
         )}
       </div>
-      <CardContent className="p-4 bg-slate-900/50">
-        <h3 className="font-bold text-lg text-white truncate">{bot.name}</h3>
-        <div className="flex items-center gap-2 text-slate-400 text-sm mt-1">
-          <Users className="w-3 h-3" />
+
+      <CardContent className="p-4 bg-white">
+        <h3 className="font-bold text-lg text-slate-900 truncate">{bot.name}</h3>
+        <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
+          <Users className="w-3 h-3 flex-shrink-0" />
           <span className="truncate">{bot.team_name}</span>
         </div>
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {bot.weight_class && (
-            <Badge variant="outline" className="text-xs border-cyan-500/50 text-cyan-400">
+            <Badge variant="outline" className="text-xs border-cyan-500 text-cyan-600">
               {bot.weight_class}
             </Badge>
           )}
           {bot.weapon_type && (
-            <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400">
+            <Badge variant="outline" className="text-xs border-purple-500 text-purple-600">
               {bot.weapon_type}
             </Badge>
           )}
+          {bot.seed && (
+            <Badge variant="outline" className="text-xs border-slate-400 text-slate-500">
+              #{bot.seed}
+            </Badge>
+          )}
         </div>
+        {bot.description && (
+          <p className="text-xs text-slate-500 mt-2 line-clamp-2">{bot.description}</p>
+        )}
       </CardContent>
     </Card>
   );
