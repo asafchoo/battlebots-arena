@@ -6,7 +6,7 @@ import { Swords, Users, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export default function BotCard({ bot, onClick, selected }) {
+export default function BotCard({ bot, onClick, selected, isAuthenticated }) {
   const queryClient = useQueryClient();
 
   const deleteBotMutation = useMutation({
@@ -23,17 +23,19 @@ export default function BotCard({ bot, onClick, selected }) {
       }`}
       onClick={onClick}
     >
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (confirm(`Delete ${bot.name}?`)) deleteBotMutation.mutate();
-        }}
-        className="absolute top-2 left-2 z-10 h-7 w-7 bg-red-500/90 hover:bg-red-600 text-white"
-      >
-        <X className="w-4 h-4" />
-      </Button>
+      {isAuthenticated && (
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm(`Delete ${bot.name}?`)) deleteBotMutation.mutate();
+          }}
+          className="absolute top-2 left-2 z-10 h-7 w-7 bg-red-500/90 hover:bg-red-600 text-white"
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      )}
 
       <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
         {bot.image_url ? (
