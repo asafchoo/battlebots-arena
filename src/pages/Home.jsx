@@ -709,11 +709,61 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-white flex items-center justify-between">
                       <span>{tournament.name}</span>
-                      {tournament.current_match && !tournament.current_match.match_over && (
-                        <Badge className={tournament.is_paused ? 'bg-orange-500' : 'bg-red-500 animate-pulse'}>
-                          {tournament.is_paused ? 'PAUSED' : 'LIVE'}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {tournament.current_match && !tournament.current_match.match_over && (
+                          <Badge className={tournament.is_paused ? 'bg-orange-500' : 'bg-red-500 animate-pulse'}>
+                            {tournament.is_paused ? 'PAUSED' : 'LIVE'}
+                          </Badge>
+                        )}
+                        {isAuthenticated && (
+                          <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="destructive" className="bg-red-700 hover:bg-red-800 text-xs">
+                                <RotateCcw className="w-3 h-3 mr-1" />
+                                Reset
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-slate-900 border-slate-700">
+                              <DialogHeader>
+                                <DialogTitle className="text-white text-xl">⚠️ Reset Tournament</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 pt-4">
+                                <div className="flex items-start gap-3 p-4 bg-red-950 rounded-lg border-2 border-red-800">
+                                  <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                                  <div className="space-y-2">
+                                    <p className="text-red-300 font-semibold">This action cannot be undone!</p>
+                                    <ul className="text-sm text-red-400 list-disc list-inside space-y-1">
+                                      <li>All tournament progress and results</li>
+                                      <li>All match history</li>
+                                      <li>Current bracket structure</li>
+                                    </ul>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-slate-400 font-semibold">Enter Password to Confirm</label>
+                                  <Input
+                                    type="password"
+                                    value={resetPassword}
+                                    onChange={(e) => setResetPassword(e.target.value)}
+                                    placeholder="battlebot + date (ddmmyy)"
+                                    className="bg-slate-800 border-slate-600 text-white mt-2"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleResetConfirm()}
+                                  />
+                                  <p className="text-xs text-slate-500 mt-1">Format: battlebot + today's date (e.g., battlebot150225)</p>
+                                </div>
+                                <Button
+                                  onClick={handleResetConfirm}
+                                  disabled={resetTournamentMutation.isPending || !resetPassword}
+                                  className="w-full bg-red-600 hover:bg-red-700"
+                                >
+                                  {resetTournamentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                  Yes, Reset Everything
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
