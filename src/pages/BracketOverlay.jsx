@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, Skull, Zap } from "lucide-react";
@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function BracketOverlay() {
   const [glitchActive, setGlitchActive] = useState(false);
   const [showBracket, setShowBracket] = useState('winners'); // 'winners' or 'losers'
+  const [showWinner, setShowWinner] = useState(false);
+  const lastMatchTimestampRef = useRef(null);
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
@@ -21,6 +23,17 @@ export default function BracketOverlay() {
   });
 
   const tournament = tournaments[0];
+
+  // Show winner overlay when last_match_result changes
+  useEffect(() => {
+    const lastResult = tournament?.last_match_result;
+    if (!lastResult?.timestamp) return;
+    if (lastResult.timestamp === lastMatchTimestampRef.current) return;
+    lastMatchTimestampRef.current = lastResult.timestamp;
+    setShowWinner(true);
+    const timer = setTimeout(() => setShowWinner(false), 5000);
+    return () => clearTimeout(timer);
+  }, [tournament?.last_match_result?.timestamp]);
 
   // Glitch effect on match change
   useEffect(() => {
@@ -274,6 +287,55 @@ export default function BracketOverlay() {
           </div>
         )}
       </div>
+
+      {/* Winner Announcement Overlay */}
+      <AnimatePresence>
+        {showWinner && tournament?.last_match_result?.winner_id && (() => {
+          const winner = bots.find(b => b.id === tournament.last_match_result.winner_id);
+          const loser = bots.find(b => b.id === (
+            tournament.last_match_result.bot1_id === tournament.last_match_result.winner_id
+              ? tournament.last_match_result.bot2_id
+              : tournament.last_match_result.bot1_id
+          ));
+          return (
+            <motion.div
+              key="winner-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85"
+            >
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.1, opacity: 0 }}
+                transition={{ duration: 0.5, type: 'spring' }}
+                className="flex flex-col items-center gap-6 text-center px-8"
+              >
+                <motion.div
+                  animate={{ rotate: [0, -5, 5, -3, 3, 0] }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  <Trophy className="w-24 h-24 text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]" />
+                </motion.div>
+                <div className="text-yellow-400 text-lg font-black tracking-[0.3em] uppercase">Winner</div>
+                {winner?.image_url && (
+                  <img src={winner.image_url} alt={winner.name} className="w-32 h-32 rounded-full object-cover border-4 border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)]" />
+                )}
+                <div className="text-white text-5xl font-black tracking-wider drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+                  {winner?.name || '???'}
+                </div>
+                {loser && (
+                  <div className="text-slate-400 text-xl font-semibold">
+                    defeats <span className="text-red-400 line-through">{loser.name}</span>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Decorative corners */}
       <div className="fixed top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-cyan-400/70 z-10" />
