@@ -56,22 +56,19 @@ export default function Home() {
 
       const shuffledBots = [...bots].sort(() => Math.random() - 0.5);
       const numBots = shuffledBots.length;
-      const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(numBots)));
-      const numByes = nextPowerOf2 - numBots;
 
-      // Split bots: those who fight in R1, those who get a bye to R2
-      const numR1Fighters = numBots - numByes; // = 2 * (numBots - nextPowerOf2/2) ... always even
-      const r1Bots = shuffledBots.slice(0, numR1Fighters);
-      const byeBots = shuffledBots.slice(numR1Fighters);
+      // Standard DE bracket: ALL bots fight in R1.
+      // If numBots is odd, one R1 match has a bye (bot2_id = null, auto-advance).
+      // R1 has ceil(numBots/2) matches. R2 has ceil(R1/2) matches, etc.
 
-      // Round 1: only r1Bots fight (numR1Fighters/2 matches)
       const winners_bracket = [];
       let matchNum = 1;
-      const numR1Matches = numR1Fighters / 2;
 
+      // WB R1: pair up all bots
+      const numR1Matches = Math.ceil(numBots / 2);
       for (let i = 0; i < numR1Matches; i++) {
-        const bot1 = r1Bots[i * 2];
-        const bot2 = r1Bots[i * 2 + 1];
+        const bot1 = shuffledBots[i * 2];
+        const bot2 = shuffledBots[i * 2 + 1] || null; // last match may be a bye
         winners_bracket.push({
           round: 1, match_number: matchNum++,
           bot1_id: bot1?.id || null, bot2_id: bot2?.id || null,
@@ -79,62 +76,34 @@ export default function Home() {
         });
       }
 
-      // Round 2: byeBots + winners from R1 → nextPowerOf2/2 matches total
-      const numR2Matches = nextPowerOf2 / 2;
-      // byeBots fill first slots of R2 matches; R1 winner slots are filled later as matches complete
-      // We pre-assign byeBots to R2 matches (paired among themselves and with R1 winner slots)
-      const numByeOnlyMatches = numByes / 2; // pairs of byeBots fighting each other
-      const numMixedMatches = numR1Matches;  // each R1 match winner feeds one R2 match
-
-      // First: bye vs bye matches
-      for (let i = 0; i < numByeOnlyMatches; i++) {
-        const bot1 = byeBots[i * 2];
-        const bot2 = byeBots[i * 2 + 1];
-        winners_bracket.push({
-          round: 2, match_number: matchNum++,
-          bot1_id: bot1?.id || null, bot2_id: bot2?.id || null,
-          winner_id: null, status: 'pending'
-        });
-      }
-      // Then: bye vs R1-winner matches (R1 winner slot is null, filled when R1 match completes)
-      const remainingByeBots = byeBots.slice(numByeOnlyMatches * 2);
-      for (let i = 0; i < numMixedMatches; i++) {
-        const byeBot = remainingByeBots[i] || null;
-        winners_bracket.push({
-          round: 2, match_number: matchNum++,
-          bot1_id: byeBot?.id || null, bot2_id: null, // bot2 = winner of R1 match i
-          winner_id: null, status: 'pending'
-        });
-      }
-
-      // Build remaining WB rounds (R3 onwards)
-      let prevRoundMatches = numR2Matches;
-      let currentRound = 3;
-      while (prevRoundMatches > 1) {
-        const thisRoundMatches = prevRoundMatches / 2;
-        for (let i = 0; i < thisRoundMatches; i++) {
+      // WB R2+: build empty slots until 1 match remaining
+      let prevCount = numR1Matches;
+      let currentRound = 2;
+      while (prevCount > 1) {
+        const thisCount = Math.ceil(prevCount / 2);
+        for (let i = 0; i < thisCount; i++) {
           winners_bracket.push({ round: currentRound, match_number: matchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
-        prevRoundMatches = thisRoundMatches;
+        prevCount = thisCount;
         currentRound++;
       }
+      const totalWBRounds = currentRound - 1;
 
-      // Losers Bracket: based on nextPowerOf2 (treat as full bracket size)
-      // R1 LB: receives losers from WB R1 (numR1Matches losers → numR1Matches/2 LB matches)
-      // Then standard double-elim LB structure
+      // Losers Bracket:
+      // LB R1: numR1Matches losers from WB R1 → ceil(numR1Matches/2) LB matches
+      // Then alternating: consolidation rounds (same count) and drop-in rounds (half count)
+      // Total LB rounds = (totalWBRounds - 1) * 2
       const losers_bracket = [];
-      const totalWinnerRounds = currentRound - 1; // total WB rounds including R2 as "real R1"
-      const losersRounds = (totalWinnerRounds - 1) * 2;
       let losersMatchNum = 1;
-      // LB starts with half the R1 losers count
-      let lbMatchCount = Math.max(1, Math.floor(numR1Matches / 2));
+      const totalLBRounds = (totalWBRounds - 1) * 2;
+      let lbCount = Math.ceil(numR1Matches / 2);
 
-      for (let r = 1; r <= losersRounds; r++) {
-        const count = Math.max(1, lbMatchCount);
-        for (let m = 0; m < count; m++) {
+      for (let r = 1; r <= totalLBRounds; r++) {
+        for (let m = 0; m < lbCount; m++) {
           losers_bracket.push({ round: r, match_number: losersMatchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
-        if (r % 2 === 1) lbMatchCount = Math.ceil(lbMatchCount / 2);
+        // Odd rounds: consolidation (same count next). Even rounds: halve the count.
+        if (r % 2 === 0) lbCount = Math.ceil(lbCount / 2);
       }
 
       const newTournament = await base44.entities.Tournament.create({
@@ -174,21 +143,8 @@ export default function Home() {
         let nextMatch = null;
         let targetSlot = 'bot2_id';
 
-        if (round === 1) {
-          // R1 winners fill the bot2_id (empty slot) of the corresponding R2 "bye vs R1winner" match.
-          // The structure of R2: first numByeOnlyMatches are bye-vs-bye, then numR1Matches are bye-vs-R1winner.
-          // numByeOnlyMatches = (nextPowerOf2 - numBots) / 2 = numByes/2
-          // We can derive it: totalR2Matches = matchesInNextRound.length, numR1Matches = matchesInCurrentRound.length
-          // numByeOnlyMatches = totalR2Matches - numR1Matches
-          const totalR2Matches = matchesInNextRound.length;
-          const numR1Matches = matchesInCurrentRound.length;
-          const numByeOnlyMatches = totalR2Matches - numR1Matches;
-          // The "mixed" R2 matches start after the bye-only matches
-          const mixedR2Matches = matchesInNextRound.slice(numByeOnlyMatches);
-          nextMatch = mixedR2Matches[matchIndexInRound] || null;
-          targetSlot = 'bot2_id'; // bye bot is bot1_id, R1 winner goes to bot2_id
-        } else {
-          // Standard advancement for R2+
+        {
+          // Standard advancement: every 2 matches in current round feed 1 match in next round
           const nextMatchIndex = Math.floor(matchIndexInRound / 2);
           nextMatch = matchesInNextRound[nextMatchIndex] || null;
           const isFirstSlot = matchIndexInRound % 2 === 0;
@@ -211,17 +167,31 @@ export default function Home() {
           updates.grand_finals = { ...tournament.grand_finals, bot1_id: winnerId };
         }
 
-        // Losers bracket: R1 WB losers go to LB R1
+        // Losers bracket: WB losers drop into LB
+        // WB R1 losers → LB R1, WB R2 losers → LB R2, WB R3 losers → LB R4, etc.
+        // Pattern: WB round r → LB round (r === 1 ? 1 : (r-1)*2)
         const lbRoundForLoser = round === 1 ? 1 : (round - 1) * 2;
-        const targetLoserMatch = (updates.losers_bracket || tournament.losers_bracket).find(m =>
+        // WB losers drop into LB odd rounds as bot2_id (bot1_id is reserved for LB winners from prev round)
+        // For LB R1 specifically, both slots are WB losers so use either empty slot
+        const currentLB = updates.losers_bracket || tournament.losers_bracket;
+        const targetLoserMatch = currentLB.find(m =>
           m.round === lbRoundForLoser && (!m.bot1_id || !m.bot2_id) &&
           m.bot1_id !== loserId && m.bot2_id !== loserId
         );
         if (targetLoserMatch) {
-          updates.losers_bracket = tournament.losers_bracket.map(m => {
+          const isLBR1 = lbRoundForLoser === 1;
+          updates.losers_bracket = currentLB.map(m => {
             if (m.round === targetLoserMatch.round && m.match_number === targetLoserMatch.match_number) {
-              if (!m.bot1_id) { const updated = { ...m, bot1_id: loserId }; if (m.bot2_id) updated.ready_since = new Date().toISOString(); return updated; }
-              else if (!m.bot2_id && m.bot1_id !== loserId) return { ...m, bot2_id: loserId, ready_since: new Date().toISOString() };
+              // LB R1: fill any empty slot. LB R3+: WB losers go to bot2_id
+              if (isLBR1) {
+                if (!m.bot1_id) { const updated = { ...m, bot1_id: loserId }; if (m.bot2_id) updated.ready_since = new Date().toISOString(); return updated; }
+                else if (!m.bot2_id) return { ...m, bot2_id: loserId, ready_since: new Date().toISOString() };
+              } else {
+                // WB loser fills bot2_id; bot1_id will be filled by LB winner from previous round
+                const updated = { ...m, bot2_id: loserId };
+                if (m.bot1_id) updated.ready_since = new Date().toISOString();
+                return updated;
+              }
             }
             return m;
           });
@@ -239,13 +209,33 @@ export default function Home() {
           updates.losers_bracket = newLosers;
         } else {
           const nextRound = round + 1;
-          const nextLoserMatch = newLosers.find(m => m.round === nextRound && (!m.bot1_id || !m.bot2_id) && m.bot1_id !== winnerId && m.bot2_id !== winnerId);
-          if (nextLoserMatch) {
+          const matchesInCurrentLBRound = newLosers.filter(m => m.round === round).sort((a, b) => a.match_number - b.match_number);
+          const matchIndexInLBRound = matchesInCurrentLBRound.findIndex(m => m.match_number === match_number);
+          const matchesInNextLBRound = newLosers.filter(m => m.round === nextRound).sort((a, b) => a.match_number - b.match_number);
+
+          // LB odd rounds: drop-in (WB losers arrive), consolidation keeps same match count
+          // LB even rounds: winners advance, halving the count
+          // Winner always advances to next round. Slot determined by index.
+          const isConsolidationRound = (round % 2 === 1); // odd = drop-in round, winners fill slot for same-count next round
+          let nextLBMatch = null;
+          let nextSlot = 'bot1_id';
+          if (isConsolidationRound) {
+            // Same match index in next round (1:1 mapping)
+            nextLBMatch = matchesInNextLBRound[matchIndexInLBRound] || null;
+            nextSlot = 'bot1_id'; // winners from odd rounds fill bot1_id, WB losers fill bot2_id
+          } else {
+            // Even round: winners pair up (2:1 mapping)
+            const nextMatchIndex = Math.floor(matchIndexInLBRound / 2);
+            nextLBMatch = matchesInNextLBRound[nextMatchIndex] || null;
+            nextSlot = matchIndexInLBRound % 2 === 0 ? 'bot1_id' : 'bot2_id';
+          }
+
+          if (nextLBMatch) {
             updates.losers_bracket = newLosers.map(m => {
-              if (m.round === nextLoserMatch.round && m.match_number === nextLoserMatch.match_number) {
-                const slot = !m.bot1_id ? 'bot1_id' : 'bot2_id';
-                const updated = { ...m, [slot]: winnerId };
-                if (slot === 'bot2_id' || m.bot2_id) updated.ready_since = new Date().toISOString();
+              if (m.round === nextLBMatch.round && m.match_number === nextLBMatch.match_number) {
+                const updated = { ...m, [nextSlot]: winnerId };
+                const otherSlot = nextSlot === 'bot1_id' ? 'bot2_id' : 'bot1_id';
+                if (updated[otherSlot]) updated.ready_since = new Date().toISOString();
                 return updated;
               }
               return m;
