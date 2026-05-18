@@ -310,6 +310,20 @@ export default function Home() {
     prevMatchRef.current = currMatch;
   }, [tournament?.current_match]);
 
+  // Detect controller red button (reset): countdown_end becomes null while match is active and not paused
+  const prevCountdownRef = useRef(null);
+  useEffect(() => {
+    const cm = tournament?.current_match;
+    const countdownEnd = tournament?.countdown_end;
+    const wasCounting = prevCountdownRef.current !== null && prevCountdownRef.current !== undefined;
+    const nowNull = !countdownEnd;
+    // If countdown just went null while a match is active and not already over → controller sent reset
+    if (cm && !cm.match_over && !tournament?.is_paused && wasCounting && nowNull && !localMatchOver) {
+      setLocalMatchOver({ bot1_id: cm.bot1_id, bot2_id: cm.bot2_id });
+    }
+    prevCountdownRef.current = countdownEnd;
+  }, [tournament?.countdown_end, tournament?.is_paused]);
+
   const isLoading = botsLoading || tourneysLoading;
 
   const getReadyMatches = () => {
