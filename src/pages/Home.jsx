@@ -176,11 +176,15 @@ export default function Home() {
 
         if (round === 1) {
           // R1 winners fill the bot2_id (empty slot) of the corresponding R2 "bye vs R1winner" match.
-          // Each R1 match i maps to the last numR1Matches R2 matches, in order.
-          const numR2Matches = matchesInNextRound.length;
+          // The structure of R2: first numByeOnlyMatches are bye-vs-bye, then numR1Matches are bye-vs-R1winner.
+          // numByeOnlyMatches = (nextPowerOf2 - numBots) / 2 = numByes/2
+          // We can derive it: totalR2Matches = matchesInNextRound.length, numR1Matches = matchesInCurrentRound.length
+          // numByeOnlyMatches = totalR2Matches - numR1Matches
+          const totalR2Matches = matchesInNextRound.length;
           const numR1Matches = matchesInCurrentRound.length;
-          // The "mixed" R2 matches are the last numR1Matches entries in R2
-          const mixedR2Matches = matchesInNextRound.slice(numR2Matches - numR1Matches);
+          const numByeOnlyMatches = totalR2Matches - numR1Matches;
+          // The "mixed" R2 matches start after the bye-only matches
+          const mixedR2Matches = matchesInNextRound.slice(numByeOnlyMatches);
           nextMatch = mixedR2Matches[matchIndexInRound] || null;
           targetSlot = 'bot2_id'; // bye bot is bot1_id, R1 winner goes to bot2_id
         } else {
