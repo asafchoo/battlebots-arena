@@ -59,29 +59,57 @@ export default function Home() {
       const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(numBots)));
       const numByes = nextPowerOf2 - numBots;
 
+      // Split bots: those who fight in R1, those who get a bye to R2
+      const numR1Fighters = numBots - numByes; // = 2 * (numBots - nextPowerOf2/2) ... always even
+      const r1Bots = shuffledBots.slice(0, numR1Fighters);
+      const byeBots = shuffledBots.slice(numR1Fighters);
+
+      // Round 1: only r1Bots fight (numR1Fighters/2 matches)
       const winners_bracket = [];
       let matchNum = 1;
-      const round1Matches = nextPowerOf2 / 2;
-      const botsWithByes = [...shuffledBots];
-      for (let i = 0; i < numByes; i++) botsWithByes.push(null);
-      const shuffledWithByes = [...botsWithByes].sort(() => Math.random() - 0.5);
+      const numR1Matches = numR1Fighters / 2;
 
-      for (let i = 0; i < round1Matches; i++) {
-        const bot1 = shuffledWithByes[i * 2];
-        const bot2 = shuffledWithByes[i * 2 + 1];
-        let winner_id = null;
-        let status = 'pending';
-        if (!bot1 && bot2) { winner_id = bot2.id; status = 'complete'; }
-        else if (bot1 && !bot2) { winner_id = bot1.id; status = 'complete'; }
+      for (let i = 0; i < numR1Matches; i++) {
+        const bot1 = r1Bots[i * 2];
+        const bot2 = r1Bots[i * 2 + 1];
         winners_bracket.push({
           round: 1, match_number: matchNum++,
           bot1_id: bot1?.id || null, bot2_id: bot2?.id || null,
-          winner_id, status
+          winner_id: null, status: 'pending'
         });
       }
 
-      let prevRoundMatches = round1Matches;
-      let currentRound = 2;
+      // Round 2: byeBots + winners from R1 → nextPowerOf2/2 matches total
+      const numR2Matches = nextPowerOf2 / 2;
+      // byeBots fill first slots of R2 matches; R1 winner slots are filled later as matches complete
+      // We pre-assign byeBots to R2 matches (paired among themselves and with R1 winner slots)
+      const numByeOnlyMatches = numByes / 2; // pairs of byeBots fighting each other
+      const numMixedMatches = numR1Matches;  // each R1 match winner feeds one R2 match
+
+      // First: bye vs bye matches
+      for (let i = 0; i < numByeOnlyMatches; i++) {
+        const bot1 = byeBots[i * 2];
+        const bot2 = byeBots[i * 2 + 1];
+        winners_bracket.push({
+          round: 2, match_number: matchNum++,
+          bot1_id: bot1?.id || null, bot2_id: bot2?.id || null,
+          winner_id: null, status: 'pending'
+        });
+      }
+      // Then: bye vs R1-winner matches (R1 winner slot is null, filled when R1 match completes)
+      const remainingByeBots = byeBots.slice(numByeOnlyMatches * 2);
+      for (let i = 0; i < numMixedMatches; i++) {
+        const byeBot = remainingByeBots[i] || null;
+        winners_bracket.push({
+          round: 2, match_number: matchNum++,
+          bot1_id: byeBot?.id || null, bot2_id: null, // bot2 = winner of R1 match i
+          winner_id: null, status: 'pending'
+        });
+      }
+
+      // Build remaining WB rounds (R3 onwards)
+      let prevRoundMatches = numR2Matches;
+      let currentRound = 3;
       while (prevRoundMatches > 1) {
         const thisRoundMatches = prevRoundMatches / 2;
         for (let i = 0; i < thisRoundMatches; i++) {
@@ -91,14 +119,19 @@ export default function Home() {
         currentRound++;
       }
 
+      // Losers Bracket: based on nextPowerOf2 (treat as full bracket size)
+      // R1 LB: receives losers from WB R1 (numR1Matches losers → numR1Matches/2 LB matches)
+      // Then standard double-elim LB structure
       const losers_bracket = [];
-      const totalWinnerRounds = currentRound - 1;
+      const totalWinnerRounds = currentRound - 1; // total WB rounds including R2 as "real R1"
       const losersRounds = (totalWinnerRounds - 1) * 2;
       let losersMatchNum = 1;
-      let lbMatchCount = round1Matches / 2;
+      // LB starts with half the R1 losers count
+      let lbMatchCount = Math.max(1, Math.floor(numR1Matches / 2));
 
       for (let r = 1; r <= losersRounds; r++) {
-        for (let m = 0; m < lbMatchCount; m++) {
+        const count = Math.max(1, lbMatchCount);
+        for (let m = 0; m < count; m++) {
           losers_bracket.push({ round: r, match_number: losersMatchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
         if (r % 2 === 1) lbMatchCount = Math.ceil(lbMatchCount / 2);
@@ -137,13 +170,34 @@ export default function Home() {
         const matchesInCurrentRound = newWinners.filter(m => m.round === round).sort((a, b) => a.match_number - b.match_number);
         const matchIndexInRound = matchesInCurrentRound.findIndex(m => m.match_number === match_number);
         const matchesInNextRound = newWinners.filter(m => m.round === nextRound).sort((a, b) => a.match_number - b.match_number);
-        const nextMatchIndex = Math.floor(matchIndexInRound / 2);
-        const nextMatch = matchesInNextRound[nextMatchIndex];
-        const isFirstSlot = matchIndexInRound % 2 === 0;
+
+        let nextMatch = null;
+        let targetSlot = 'bot2_id';
+
+        if (round === 1) {
+          // R1 winners fill the bot2_id (empty slot) of the corresponding R2 "bye vs R1winner" match.
+          // Each R1 match i maps to the last numR1Matches R2 matches, in order.
+          const numR2Matches = matchesInNextRound.length;
+          const numR1Matches = matchesInCurrentRound.length;
+          // The "mixed" R2 matches are the last numR1Matches entries in R2
+          const mixedR2Matches = matchesInNextRound.slice(numR2Matches - numR1Matches);
+          nextMatch = mixedR2Matches[matchIndexInRound] || null;
+          targetSlot = 'bot2_id'; // bye bot is bot1_id, R1 winner goes to bot2_id
+        } else {
+          // Standard advancement for R2+
+          const nextMatchIndex = Math.floor(matchIndexInRound / 2);
+          nextMatch = matchesInNextRound[nextMatchIndex] || null;
+          const isFirstSlot = matchIndexInRound % 2 === 0;
+          targetSlot = isFirstSlot ? 'bot1_id' : 'bot2_id';
+        }
 
         const advancedWinners = newWinners.map(m => {
           if (nextMatch && m.round === nextRound && m.match_number === nextMatch.match_number) {
-            return { ...m, [isFirstSlot ? 'bot1_id' : 'bot2_id']: winnerId };
+            const updated = { ...m, [targetSlot]: winnerId };
+            // If both slots now filled, mark ready
+            const otherSlot = targetSlot === 'bot1_id' ? 'bot2_id' : 'bot1_id';
+            if (updated[otherSlot]) updated.ready_since = new Date().toISOString();
+            return updated;
           }
           return m;
         });
@@ -153,6 +207,7 @@ export default function Home() {
           updates.grand_finals = { ...tournament.grand_finals, bot1_id: winnerId };
         }
 
+        // Losers bracket: R1 WB losers go to LB R1
         const lbRoundForLoser = round === 1 ? 1 : (round - 1) * 2;
         const targetLoserMatch = (updates.losers_bracket || tournament.losers_bracket).find(m =>
           m.round === lbRoundForLoser && (!m.bot1_id || !m.bot2_id) &&
