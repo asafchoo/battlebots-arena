@@ -297,12 +297,14 @@ export default function Home() {
 
   const prevMatchRef = useRef(null);
   useEffect(() => {
-    const prevMatch = prevMatchRef.current;
     const currMatch = tournament?.current_match;
+    const prevMatch = prevMatchRef.current;
+    // Only clear overrideMatch when a NEW match starts (current_match goes from null to something)
     if (!prevMatch && currMatch && !currMatch.match_over) setOverrideMatch(null);
+    // Clear localMatchOver when current_match is cleared
     if (!currMatch) setLocalMatchOver(null);
-    prevMatchRef.current = currMatch;
-  }, [tournament?.current_match]);
+    prevMatchRef.current = currMatch ?? null;
+  }, [tournament?.current_match?.match_number, tournament?.current_match?.bracket]);
 
   // Detect controller red button (reset): countdown_end becomes null while match is active and not paused
   const prevCountdownRef = useRef(null);
@@ -632,23 +634,8 @@ export default function Home() {
                                   return (
                                     <button
                                       key={`${m.bracket}-${m.match_number}`}
-                                      onClick={async () => {
+                                      onClick={() => {
                                         setOverrideMatch(m);
-                                        let bracketUpdate = {};
-                                        if (m.bracket === 'winners') {
-                                          const others = tournament.winners_bracket.filter(bm => !(bm.round === m.round && bm.match_number === m.match_number));
-                                          const chosen = tournament.winners_bracket.find(bm => bm.round === m.round && bm.match_number === m.match_number);
-                                          const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
-                                          const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
-                                          bracketUpdate = { winners_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
-                                        } else if (m.bracket === 'losers') {
-                                          const others = tournament.losers_bracket.filter(bm => !(bm.round === m.round && bm.match_number === m.match_number));
-                                          const chosen = tournament.losers_bracket.find(bm => bm.round === m.round && bm.match_number === m.match_number);
-                                          const pendingOthers = others.filter(bm => bm.status === 'pending' && bm.bot1_id && bm.bot2_id);
-                                          const nonPending = others.filter(bm => !(bm.status === 'pending' && bm.bot1_id && bm.bot2_id));
-                                          bracketUpdate = { losers_bracket: [chosen, ...pendingOthers, ...nonPending].filter(Boolean) };
-                                        }
-                                        if (Object.keys(bracketUpdate).length > 0) base44.entities.Tournament.update(tournament.id, bracketUpdate);
                                       }}
                                       className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                         isSelected ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
