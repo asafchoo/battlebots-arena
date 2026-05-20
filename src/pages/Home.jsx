@@ -735,19 +735,7 @@ export default function Home() {
                             >
                               {b2?.name || 'Bot 2'}
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={async () => {
-                                setLocalMatchOver({ bot1_id: cm.bot1_id, bot2_id: cm.bot2_id });
-                                base44.entities.Tournament.update(tournament.id, {
-                                  current_match: { ...cm, match_over: true },
-                                  countdown_end: null, is_paused: false, paused_time_remaining: 0
-                                });
-                              }}
-                              className="text-xs bg-red-700 hover:bg-red-800 ml-4"
-                            >
-                              ■ End Match
-                            </Button>
+
                           </div>
                         )}
                       </CardContent>
