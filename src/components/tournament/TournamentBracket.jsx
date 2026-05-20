@@ -54,7 +54,7 @@ export default function TournamentBracket({
         </div>
         <div className="flex gap-6 overflow-x-auto pb-4">
           {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
-            <div key={`w-${round}`} className="flex flex-col gap-4 min-w-[180px]">
+            <div key={`w-${round}`} className="flex flex-col gap-4 min-w-[135px]">
               <div className="text-xs text-slate-500 text-center uppercase tracking-wider">
                 Round {round}
               </div>
@@ -85,7 +85,7 @@ export default function TournamentBracket({
           </div>
           <div className="flex gap-6 overflow-x-auto pb-4">
             {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-              <div key={`l-${round}`} className="flex flex-col gap-4 min-w-[180px]">
+              <div key={`l-${round}`} className="flex flex-col gap-4 min-w-[135px]">
                 <div className="text-xs text-slate-500 text-center uppercase tracking-wider">
                   Round {round}
                 </div>
@@ -117,7 +117,7 @@ export default function TournamentBracket({
             <Trophy className="w-6 h-6" />
           </div>
           <div className="flex justify-center">
-            <div className="min-w-[220px]">
+            <div className="min-w-[165px]">
               <BracketMatch
                 match={{
                   ...grand_finals,
