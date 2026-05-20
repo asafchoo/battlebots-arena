@@ -311,10 +311,19 @@ export default function Home() {
   useEffect(() => {
     const currMatch = tournament?.current_match;
     const prevMatch = prevMatchRef.current;
-    // When a NEW match starts, clear the DB override
+    // When a NEW match starts, clear the DB override and restore pending_hold → pending
     if (!prevMatch && currMatch && !currMatch.match_over && tournament?.next_match_override) {
-      base44.entities.Tournament.update(tournament.id, { next_match_override: null })
-        .then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+      const wb = (tournament.winners_bracket || []).map(m =>
+        m.status === 'pending_hold' ? { ...m, status: 'pending' } : m
+      );
+      const lb = (tournament.losers_bracket || []).map(m =>
+        m.status === 'pending_hold' ? { ...m, status: 'pending' } : m
+      );
+      base44.entities.Tournament.update(tournament.id, {
+        next_match_override: null,
+        winners_bracket: wb,
+        losers_bracket: lb,
+      }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
     }
     // Clear localMatchOver when current_match is cleared
     if (!currMatch) setLocalMatchOver(null);
@@ -344,7 +353,7 @@ export default function Home() {
       ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' }))
     ];
     const ready = allMatches
-      .filter(m => m.status === 'pending' && m.bot1_id && m.bot2_id)
+      .filter(m => (m.status === 'pending' || m.status === 'pending_hold') && m.bot1_id && m.bot2_id)
       .sort((a, b) => {
         if (a.ready_since && b.ready_since) return new Date(a.ready_since) - new Date(b.ready_since);
         if (a.ready_since) return -1;
@@ -624,28 +633,23 @@ export default function Home() {
                                     <button
                                     key={`${m.bracket}-${m.match_number}`}
                                     onClick={() => {
-                                      // Reorder the bracket arrays so the selected match is first (readyMatches[0])
-                                      // This is what setFightState uses to pick the next match
-                                      const updates = {
-                                        next_match_override: { bracket: m.bracket, match_number: m.match_number }
-                                      };
-                                      if (m.bracket === 'winners') {
-                                        const wb = [...tournament.winners_bracket];
-                                        const idx = wb.findIndex(x => x.match_number === m.match_number);
-                                        if (idx > 0) {
-                                          wb.splice(0, 0, wb.splice(idx, 1)[0]);
-                                          updates.winners_bracket = wb;
-                                        }
-                                      } else if (m.bracket === 'losers') {
-                                        const lb = [...tournament.losers_bracket];
-                                        const idx = lb.findIndex(x => x.match_number === m.match_number);
-                                        if (idx > 0) {
-                                          lb.splice(0, 0, lb.splice(idx, 1)[0]);
-                                          updates.losers_bracket = lb;
-                                        }
-                                      }
-                                      base44.entities.Tournament.update(tournament.id, updates)
-                                        .then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                                      // Mark all other ready matches as 'pending_hold' so setFightState
+                                      // (which filters for status==='pending') only sees the chosen one
+                                      const wb = (tournament.winners_bracket || []).map(x => {
+                                        if (x.status !== 'pending' || !x.bot1_id || !x.bot2_id) return x;
+                                        const isChosen = m.bracket === 'winners' && x.match_number === m.match_number;
+                                        return isChosen ? x : { ...x, status: 'pending_hold' };
+                                      });
+                                      const lb = (tournament.losers_bracket || []).map(x => {
+                                        if (x.status !== 'pending' || !x.bot1_id || !x.bot2_id) return x;
+                                        const isChosen = m.bracket === 'losers' && x.match_number === m.match_number;
+                                        return isChosen ? x : { ...x, status: 'pending_hold' };
+                                      });
+                                      base44.entities.Tournament.update(tournament.id, {
+                                        next_match_override: { bracket: m.bracket, match_number: m.match_number },
+                                        winners_bracket: wb,
+                                        losers_bracket: lb,
+                                      }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
                                     }}
                                       className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                         isSelected ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
