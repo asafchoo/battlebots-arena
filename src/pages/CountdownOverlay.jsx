@@ -135,11 +135,14 @@ export default function CountdownOverlay() {
   }
 
   // Determine which view to show
-  const currentWinnerId = tournament.current_match?.winner_id;
-  const lastResultWinnerId = showLastResult && tournament.last_match_result?.winner_id;
-  const winnerId = currentWinnerId || lastResultWinnerId;
-  const showJudgesView = tournament?.current_match?.match_over && !winnerId;
-  const showWinnerView = winnerId && !showJudgesView;
+  const currentWinnerId = tournament?.current_match?.winner_id;
+  const lastResultWinnerId = showLastResult ? tournament?.last_match_result?.winner_id : null;
+  const winnerId = currentWinnerId || lastResultWinnerId || null;
+  // Judges view: match is over (match_over=true OR countdown_end is null while match exists) and no winner yet
+  const matchIsOver = tournament?.current_match?.match_over === true || 
+    (!tournament?.countdown_end && !tournament?.is_paused && tournament?.current_match && !currentWinnerId);
+  const showJudgesView = matchIsOver && !winnerId;
+  const showWinnerView = !!winnerId;
 
   return (
     <motion.div 
