@@ -622,12 +622,31 @@ export default function Home() {
                                     : idx === 0;
                                   return (
                                     <button
-                                     key={`${m.bracket}-${m.match_number}`}
-                                     onClick={() => {
-                                       base44.entities.Tournament.update(tournament.id, {
-                                         next_match_override: { bracket: m.bracket, match_number: m.match_number }
-                                       }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
-                                     }}
+                                    key={`${m.bracket}-${m.match_number}`}
+                                    onClick={() => {
+                                      // Reorder the bracket arrays so the selected match is first (readyMatches[0])
+                                      // This is what setFightState uses to pick the next match
+                                      const updates = {
+                                        next_match_override: { bracket: m.bracket, match_number: m.match_number }
+                                      };
+                                      if (m.bracket === 'winners') {
+                                        const wb = [...tournament.winners_bracket];
+                                        const idx = wb.findIndex(x => x.match_number === m.match_number);
+                                        if (idx > 0) {
+                                          wb.splice(0, 0, wb.splice(idx, 1)[0]);
+                                          updates.winners_bracket = wb;
+                                        }
+                                      } else if (m.bracket === 'losers') {
+                                        const lb = [...tournament.losers_bracket];
+                                        const idx = lb.findIndex(x => x.match_number === m.match_number);
+                                        if (idx > 0) {
+                                          lb.splice(0, 0, lb.splice(idx, 1)[0]);
+                                          updates.losers_bracket = lb;
+                                        }
+                                      }
+                                      base44.entities.Tournament.update(tournament.id, updates)
+                                        .then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                                    }}
                                       className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                         isSelected ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
                                       }`}
