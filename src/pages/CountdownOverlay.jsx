@@ -396,12 +396,12 @@ export default function CountdownOverlay() {
                       className="w-[512px] h-[512px] rounded-full object-cover border-4 border-cyan-400 shadow-[0_0_50px_rgba(6,182,212,0.6)]"
                     />
                   )}
-                  <div className="text-white text-5xl font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                  <div className="text-white text-[110px] font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                     {bot1?.name || "TBD"}
                   </div>
                   <div className="text-slate-400 text-lg">{bot1?.team_name}</div>
                   {tournament.current_match.bot1_unstuck && (
-                    <span className="px-3 py-1 bg-yellow-500 text-black text-sm font-bold rounded">UNSTUCK</span>
+                    <span className="px-6 py-2 bg-yellow-500 text-black text-2xl font-bold rounded">UNSTUCK</span>
                   )}
                 </motion.div>
 
@@ -436,12 +436,12 @@ export default function CountdownOverlay() {
                       className="w-[512px] h-[512px] rounded-full object-cover border-4 border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.6)]"
                     />
                   )}
-                  <div className="text-white text-5xl font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                  <div className="text-white text-[110px] font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                     {bot2?.name || "TBD"}
                   </div>
                   <div className="text-slate-400 text-lg">{bot2?.team_name}</div>
                   {tournament.current_match.bot2_unstuck && (
-                    <span className="px-3 py-1 bg-yellow-500 text-black text-sm font-bold rounded">UNSTUCK</span>
+                    <span className="px-6 py-2 bg-yellow-500 text-black text-2xl font-bold rounded">UNSTUCK</span>
                   )}
                 </motion.div>
               </div>
