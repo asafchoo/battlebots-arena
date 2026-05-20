@@ -175,7 +175,7 @@ export default function CountdownOverlay() {
                   <img
                     src={winner.image_url}
                     alt={winner.name}
-                    className="w-64 h-64 rounded-full object-cover border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.7)]"
+                    className="w-[512px] h-[512px] rounded-full object-cover border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.7)]"
                   />
                 )}
                 <div className="text-white text-8xl font-black tracking-wider drop-shadow-[0_0_30px_rgba(255,255,255,0.6)]">
@@ -235,7 +235,7 @@ export default function CountdownOverlay() {
                     <img
                       src={bot1.image_url}
                       alt={bot1.name}
-                      className="w-56 h-56 rounded-full object-cover border-4 border-cyan-500/60 shadow-[0_0_40px_rgba(6,182,212,0.4)]"
+                      className="w-[448px] h-[448px] rounded-full object-cover border-4 border-cyan-500/60 shadow-[0_0_40px_rgba(6,182,212,0.4)]"
                     />
                   )}
                   <div className="text-white text-4xl font-black tracking-wider">{bot1?.name || 'TBD'}</div>
@@ -285,7 +285,7 @@ export default function CountdownOverlay() {
             {/* Bot 1 */}
             <div className="relative z-10 flex items-center gap-4 flex-1">
               {bot1?.image_url && (
-                <img src={bot1.image_url} alt={bot1.name} className="w-24 h-24 rounded-full object-cover border-2 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)]" />
+                <img src={bot1.image_url} alt={bot1.name} className="w-48 h-48 rounded-full object-cover border-2 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)]" />
               )}
               <div>
                 <div className="flex items-center gap-2">
@@ -327,7 +327,7 @@ export default function CountdownOverlay() {
                 <p className="text-sm text-slate-400">{bot2?.team_name}</p>
               </div>
               {bot2?.image_url && (
-                <img src={bot2.image_url} alt={bot2.name} className="w-24 h-24 rounded-full object-cover border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.5)]" />
+                <img src={bot2.image_url} alt={bot2.name} className="w-48 h-48 rounded-full object-cover border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.5)]" />
               )}
             </div>
           </motion.div>
@@ -379,7 +379,7 @@ export default function CountdownOverlay() {
                     <img
                       src={bot1.image_url}
                       alt={bot1.name}
-                      className="w-64 h-64 rounded-full object-cover border-4 border-cyan-400 shadow-[0_0_50px_rgba(6,182,212,0.6)]"
+                      className="w-[512px] h-[512px] rounded-full object-cover border-4 border-cyan-400 shadow-[0_0_50px_rgba(6,182,212,0.6)]"
                     />
                   )}
                   <div className="text-white text-5xl font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
@@ -419,7 +419,7 @@ export default function CountdownOverlay() {
                     <img
                       src={bot2.image_url}
                       alt={bot2.name}
-                      className="w-64 h-64 rounded-full object-cover border-4 border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.6)]"
+                      className="w-[512px] h-[512px] rounded-full object-cover border-4 border-purple-400 shadow-[0_0_50px_rgba(168,85,247,0.6)]"
                     />
                   )}
                   <div className="text-white text-5xl font-black uppercase tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
