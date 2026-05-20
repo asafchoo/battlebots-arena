@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Zap, Trophy } from "lucide-react";
+import { Swords, Zap, Trophy, PauseCircle } from "lucide-react";
 
 export default function CountdownOverlay() {
   const [timeLeft, setTimeLeft] = useState(180);
@@ -299,19 +299,33 @@ export default function CountdownOverlay() {
             </div>
 
             {/* Timer */}
-            <div className="relative z-10 flex items-center gap-6 flex-shrink-0">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                isUrgent ? 'bg-red-900/70 border-2 border-red-500' : 'bg-cyan-900/70 border-2 border-cyan-500'
-              }`}>
-                <Swords className={`w-7 h-7 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
-              </div>
-              <div
-                className={`text-7xl font-black tabular-nums drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] ${
-                  isUrgent ? 'text-red-500' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
-                }`}
-                style={{ opacity: blinkVisible ? 1 : 0, transition: 'opacity 0.05s' }}
-              >
-                {formatTime(timeLeft)}
+            <div className="relative z-10 flex flex-col items-center gap-1 flex-shrink-0">
+              {tournament?.is_paused && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-orange-500/90 rounded-full text-black text-xs font-black tracking-widest uppercase animate-pulse">
+                  <PauseCircle className="w-3 h-3" />
+                  PAUSED
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
+                  tournament?.is_paused ? 'bg-orange-900/70 border-2 border-orange-500' :
+                  isUrgent ? 'bg-red-900/70 border-2 border-red-500' : 'bg-cyan-900/70 border-2 border-cyan-500'
+                }`}>
+                  {tournament?.is_paused
+                    ? <PauseCircle className="w-7 h-7 text-orange-400" />
+                    : <Swords className={`w-7 h-7 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
+                  }
+                </div>
+                <div
+                  className={`text-7xl font-black tabular-nums ${
+                    tournament?.is_paused ? 'text-orange-400 drop-shadow-[0_0_15px_rgba(251,146,60,0.8)]' :
+                    isUrgent ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]' :
+                    'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)]'
+                  }`}
+                  style={{ opacity: blinkVisible ? 1 : 0, transition: 'opacity 0.05s' }}
+                >
+                  {formatTime(timeLeft)}
+                </div>
               </div>
             </div>
 
@@ -439,18 +453,31 @@ export default function CountdownOverlay() {
                 transition={{ delay: 0.6 }}
                 className="text-center"
               >
+                {tournament?.is_paused && (
+                  <motion.div
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="flex items-center justify-center gap-4 mb-4 px-10 py-3 bg-orange-500/20 border-2 border-orange-500/70 rounded-full"
+                  >
+                    <PauseCircle className="w-10 h-10 text-orange-400" />
+                    <span className="text-orange-400 text-4xl font-black tracking-[0.4em] uppercase">PAUSED</span>
+                    <PauseCircle className="w-10 h-10 text-orange-400" />
+                  </motion.div>
+                )}
                 <div
                   className={`text-[150px] font-black tabular-nums leading-none ${
-                    isUrgent
-                      ? 'text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]'
-                      : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
+                    tournament?.is_paused
+                      ? 'text-orange-400 drop-shadow-[0_0_30px_rgba(251,146,60,0.8)]'
+                      : isUrgent
+                        ? 'text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                        : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400'
                   }`}
                   style={{ opacity: blinkVisible ? 1 : 0, transition: 'opacity 0.05s' }}
                 >
                   {formatTime(timeLeft)}
                 </div>
                 <div className="text-base text-slate-500 tracking-[0.5em] uppercase mt-2 font-bold">
-                  {tournament?.is_paused ? 'PAUSED' : timeLeft === 0 ? 'TIME!' : 'Remaining'}
+                  {tournament?.is_paused ? '' : timeLeft === 0 ? 'TIME!' : 'Remaining'}
                 </div>
               </motion.div>
             </div>
