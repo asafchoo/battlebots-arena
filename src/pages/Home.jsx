@@ -585,7 +585,7 @@ export default function Home() {
 
                   if (!cm) {
                     const readyMatches = getReadyMatches();
-                    const nextMatch = overrideMatch || readyMatches[0];
+                    const nextMatch = getNextReadyMatch();
                     if (!nextMatch) return null;
                     const nb1 = bots.find(b => b.id === nextMatch.bot1_id);
                     const nb2 = bots.find(b => b.id === nextMatch.bot2_id);
