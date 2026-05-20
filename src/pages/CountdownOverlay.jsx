@@ -489,7 +489,7 @@ export default function CountdownOverlay() {
             {/* Bot 1 */}
             <div className="flex items-center gap-6 flex-1">
               {bot1?.image_url && (
-                <img src={bot1.image_url} alt={bot1.name} className="w-24 h-24 rounded-lg object-cover border-2 border-cyan-500/50" />
+                <img src={bot1.image_url} alt={bot1.name} className="w-32 h-32 rounded-lg object-cover border-2 border-cyan-500/50" />
               )}
               <div>
                 <div className="flex items-center gap-2">
@@ -521,14 +521,14 @@ export default function CountdownOverlay() {
               <div className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   {tournament.current_match.bot2_unstuck && (
-                    <span className="px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded">UNSTUCK</span>
+                     <span className="px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded">UNSTUCK</span>
                   )}
                   <h3 className="text-2xl font-bold text-white uppercase">{bot2?.name || "TBD"}</h3>
                 </div>
                 <p className="text-sm text-slate-400">{bot2?.team_name}</p>
               </div>
               {bot2?.image_url && (
-                <img src={bot2.image_url} alt={bot2.name} className="w-24 h-24 rounded-lg object-cover border-2 border-purple-500/50" />
+                <img src={bot2.image_url} alt={bot2.name} className="w-32 h-32 rounded-lg object-cover border-2 border-purple-500/50" />
               )}
             </div>
           </motion.div>
