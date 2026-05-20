@@ -151,7 +151,7 @@ export default function BracketOverlay() {
                 : 'text-white bg-slate-700/60'
           }`}>
             {bot1?.image_url && (
-              <img src={bot1.image_url} className="w-12 h-12 rounded object-cover" alt="" />
+              <img src={bot1.image_url} className="w-5 h-5 rounded object-cover" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot1_id)}</span>
           </div>
@@ -167,7 +167,7 @@ export default function BracketOverlay() {
                 : 'text-white bg-slate-700/60'
           }`}>
             {bot2?.image_url && (
-              <img src={bot2.image_url} className="w-12 h-12 rounded object-cover" alt="" />
+              <img src={bot2.image_url} className="w-5 h-5 rounded object-cover" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot2_id)}</span>
           </div>
