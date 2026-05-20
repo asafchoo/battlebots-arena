@@ -135,10 +135,11 @@ export default function CountdownOverlay() {
   }
 
   // Determine which view to show
-  const hasWinnerId = tournament.current_match?.winner_id || (showLastResult && tournament.last_match_result?.winner_id);
-  const showJudgesView = tournament?.current_match?.match_over && !hasWinnerId;
-  const showWinnerView = hasWinnerId || showLastResult;
-  const winnerId = hasWinnerId;
+  const currentWinnerId = tournament.current_match?.winner_id;
+  const lastResultWinnerId = showLastResult && tournament.last_match_result?.winner_id;
+  const winnerId = currentWinnerId || lastResultWinnerId;
+  const showJudgesView = tournament?.current_match?.match_over && !winnerId;
+  const showWinnerView = winnerId && !showJudgesView;
 
   return (
     <motion.div 
@@ -212,18 +213,18 @@ export default function CountdownOverlay() {
                       transition={{ duration: 0.5 }}
                       className="flex-1 text-center relative"
                     >
-                      {showWinnerView && winnerId === bot1?.id && (
+                      {winnerId === bot1?.id && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="absolute -top-8 left-1/2 -translate-x-1/2 text-6xl"
+                          className="absolute -top-8 left-1/2 -translate-x-1/2 text-6xl z-10"
                         >
                           🏆
                         </motion.div>
                       )}
                       {bot1?.image_url && (
                         <div className={`relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 ${
-                          showWinnerView && winnerId === bot1?.id 
+                          winnerId === bot1?.id 
                             ? 'border-green-500 shadow-lg shadow-green-500/50' 
                             : 'border-cyan-500/30'
                         }`}>
@@ -265,18 +266,18 @@ export default function CountdownOverlay() {
                       transition={{ duration: 0.5 }}
                       className="flex-1 text-center relative"
                     >
-                      {showWinnerView && winnerId === bot2?.id && (
+                      {winnerId === bot2?.id && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="absolute -top-8 left-1/2 -translate-x-1/2 text-6xl"
+                          className="absolute -top-8 left-1/2 -translate-x-1/2 text-6xl z-10"
                         >
                           🏆
                         </motion.div>
                       )}
                       {bot2?.image_url && (
                         <div className={`relative w-48 h-48 mx-auto mb-6 rounded-xl overflow-hidden border-2 ${
-                          showWinnerView && winnerId === bot2?.id 
+                          winnerId === bot2?.id 
                             ? 'border-green-500 shadow-lg shadow-green-500/50' 
                             : 'border-purple-500/30'
                         }`}>
@@ -304,6 +305,10 @@ export default function CountdownOverlay() {
                     {showWinnerView ? (
                       <div className="text-7xl font-black text-green-400 animate-pulse">
                         WINNER!
+                      </div>
+                    ) : showJudgesView ? (
+                      <div className="text-5xl font-black text-yellow-400 animate-pulse">
+                        AWAITING JUDGES DECISION
                       </div>
                     ) : (
                       <div className="text-5xl font-black text-yellow-400">
