@@ -54,36 +54,32 @@ export default function Home() {
       );
       await Promise.all(botPromises);
 
-      // Double Elimination bracket generation for any number of participants.
-      // Strategy: use a 16-slot bracket (bracketSize). Bots with byes skip WB R1
-      // and are pre-seeded into WB R2. The rest play WB R1.
-      //
-      // Example for 12 bots (bracketSize=16, numByes=4):
-      //   WB R1: 4 matches (8 bots), WB R2: 4 matches (4 bye bots + 4 WB R1 winners)
-      //   LB R1: 2 matches, LB R2: 2 matches (drop), ...
-      //
-      // Example for 10 bots (bracketSize=16, numByes=6):
-      //   WB R1: 2 matches (4 bots fight), WB R2: 4 matches
-      //     - 2 R2 matches: 1 bye bot + 1 WB R1 winner each
-      //     - 2 R2 matches: 2 bye bots (no WB R1 connection, both slots pre-filled)
-      //   LB R1: 1 match (only 2 losers from WB R1), LB R2: 2 matches (drop), ...
+      // ── 12-participant Double Elimination ──
+      // bracketSize = 16 (next power of 2), numByes = 4
+      // 4 "seeded" bots skip R1 and go straight into WB R2 (bye)
+      // 8 "unseeded" bots play WB R1 (4 real matches)
+      // LB R1: 2 matches (4 losers from WB R1)
+      // LB R2 (drop): 2 matches (LB R1 winners + WB R2 losers)
+      // ... continues standard DE
 
       const shuffledBots = [...bots].sort(() => Math.random() - 0.5);
       const numBots = shuffledBots.length;
-      const bracketSize = Math.pow(2, Math.ceil(Math.log2(numBots)));
-      const numByes = bracketSize - numBots;
+      const bracketSize = Math.pow(2, Math.ceil(Math.log2(numBots))); // 16 for 12 bots
+      const numByes = bracketSize - numBots; // 4 for 12 bots
 
-      // r1Bots play WB R1, byeBots skip to WB R2
-      const r1Bots = shuffledBots.slice(0, numBots - numByes);  // bots that play R1
-      const byeBots = shuffledBots.slice(numBots - numByes);    // bots that skip to R2
+      // Split: byeBots get free pass to WB R2, r1Bots play WB R1
+      const byeBots = shuffledBots.slice(0, numByes);       // 4 bots → WB R2
+      const r1Bots = shuffledBots.slice(numByes);           // 8 bots → WB R1
 
-      const numR1Matches = r1Bots.length / 2;          // real R1 matches
-      const numR2Matches = bracketSize / 4;             // total R2 matches (always bracketSize/4)
+      // WB R1: pair the r1Bots
+      const numR1Matches = r1Bots.length / 2; // 4 matches
+      // WB R2: bracketSize/4 matches = 4 matches (2 from WB R1 winners + 2 from bye bots per match pair)
+      const numR2Matches = bracketSize / 4;   // 4 matches
 
       const wb = [];
       let wbMatchNum = 1;
 
-      // WB R1: pair r1Bots
+      // WB R1: 4 real matches
       for (let i = 0; i < numR1Matches; i++) {
         wb.push({
           round: 1, match_number: wbMatchNum++,
@@ -93,30 +89,21 @@ export default function Home() {
         });
       }
 
-      // WB R2: numR2Matches matches total.
-      // First numR1Matches R2 matches: bot1_id = bye bot, bot2_id = WB R1 winner (TBD)
-      // Remaining R2 matches (if numByes > numR1Matches): both slots = bye bots, pre-filled & auto-ready
+      // WB R2: 4 matches, each gets 1 bye bot + 1 empty slot (filled by WB R1 winner)
+      // Pair bye bots: byeBot[0] & WB-R1-match[0] winner → R2 match 1
+      //                byeBot[1] & WB-R1-match[1] winner → R2 match 2
+      //                byeBot[2] & WB-R1-match[2] winner → R2 match 3
+      //                byeBot[3] & WB-R1-match[3] winner → R2 match 4
+      const r2MatchNumbers = [];
       for (let i = 0; i < numR2Matches; i++) {
-        const byeBot1 = byeBots[i * 2] || null;
-        const byeBot2 = byeBots[i * 2 + 1] || null;
-        // Check if this R2 match has a corresponding R1 match feeding into it
-        const hasR1Feeder = i < numR1Matches;
-        
-        let bot1_id, bot2_id, ready_since;
-        if (!hasR1Feeder) {
-          // Pure bye match: both slots filled by bye bots
-          bot1_id = byeBot1?.id || null;
-          bot2_id = byeBot2?.id || null;
-          ready_since = (bot1_id && bot2_id) ? new Date().toISOString() : undefined;
-        } else {
-          // Mixed match: 1 bye bot + 1 WB R1 winner
-          bot1_id = byeBots[i]?.id || null;
-          bot2_id = null; // filled by WB R1 winner
-          ready_since = undefined;
-        }
-        const match = { round: 2, match_number: wbMatchNum++, bot1_id, bot2_id, winner_id: null, status: 'pending' };
-        if (ready_since) match.ready_since = ready_since;
-        wb.push(match);
+        const mn = wbMatchNum++;
+        r2MatchNumbers.push(mn);
+        wb.push({
+          round: 2, match_number: mn,
+          bot1_id: byeBots[i].id,   // bye bot pre-seeded
+          bot2_id: null,             // filled by WB R1 winner
+          winner_id: null, status: 'pending'
+        });
       }
 
       // WB R3+: standard halving from R2
@@ -133,20 +120,24 @@ export default function Home() {
       const totalWBRounds = wbRound - 1;
 
       // ── Losers Bracket ──
-      // LB R1 = fight round (WB R1 losers vs WB R1 losers)
-      // LB R2 = drop round (LB R1 winner + WB R2 loser)
-      // LB R3 = fight, LB R4 = drop, ...
+      // LB R1: 2 matches (WB R1 losers fight each other) — fight round
+      // LB R2: 2 matches (LB R1 winner + WB R2 loser) — drop round
+      // LB R3: 1 match  (fight round)
+      // LB R4: 1 match  (drop round, WB R3 loser)
+      // LB R5: 1 match  (fight round)
+      // LB R6: 1 match  (drop round, WB R4 loser)
       // Total LB rounds = (totalWBRounds - 1) * 2
-      // LB R1 count = numR1Matches / 2
       const lb = [];
       let lbMatchNum = 1;
       const totalLBRounds = (totalWBRounds - 1) * 2;
-      let lbCount = Math.max(1, Math.floor(numR1Matches / 2));
 
+      // LB R1 count = numR1Matches / 2 = 2
+      let lbCount = numR1Matches / 2;
       for (let r = 1; r <= totalLBRounds; r++) {
         for (let m = 0; m < lbCount; m++) {
           lb.push({ round: r, match_number: lbMatchNum++, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' });
         }
+        // Even rounds are drop rounds (no extra bots), odd→even stays same count, even→odd halves
         if (r % 2 === 0) lbCount = Math.max(1, Math.floor(lbCount / 2));
       }
 
@@ -198,11 +189,11 @@ export default function Home() {
         const nextMatch = nextRoundMatches[Math.floor(idx / 2)];
 
         if (nextMatch) {
-          // WB R1 winners → bot2_id of the corresponding R2 match (bot1_id is pre-filled by bye bot)
-          // WB R2+ winners → standard 2:1 pairing into next round
+          // WB R1 winners go to bot2_id (bot1_id is pre-filled by bye bot)
+          // WB R2+ winners fill the next empty slot normally
           let slot;
           if (round === 1) {
-            slot = 'bot2_id';
+            slot = 'bot2_id'; // WB R2 already has bot1_id = bye bot
           } else {
             slot = idx % 2 === 0 ? 'bot1_id' : 'bot2_id';
           }
