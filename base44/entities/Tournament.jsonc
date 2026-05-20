@@ -1,0 +1,172 @@
+{
+  "name": "Tournament",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Tournament name"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "registration",
+        "in_progress",
+        "completed"
+      ],
+      "default": "registration"
+    },
+    "is_paused": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the current match is paused"
+    },
+    "paused_time_remaining": {
+      "type": "number",
+      "description": "Seconds remaining when paused"
+    },
+    "next_match_override": {
+      "type": "object",
+      "description": "Admin-selected next match override (persisted so ESP32 controller picks it up)",
+      "properties": {
+        "bracket": {
+          "type": "string"
+        },
+        "match_number": {
+          "type": "number"
+        }
+      }
+    },
+    "winners_bracket": {
+      "type": "array",
+      "description": "Winners bracket matches",
+      "items": {
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "number"
+          },
+          "match_number": {
+            "type": "number"
+          },
+          "bot1_id": {
+            "type": "string"
+          },
+          "bot2_id": {
+            "type": "string"
+          },
+          "winner_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "losers_bracket": {
+      "type": "array",
+      "description": "Losers bracket matches",
+      "items": {
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "number"
+          },
+          "match_number": {
+            "type": "number"
+          },
+          "bot1_id": {
+            "type": "string"
+          },
+          "bot2_id": {
+            "type": "string"
+          },
+          "winner_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "grand_finals": {
+      "type": "object",
+      "description": "Grand finals match",
+      "properties": {
+        "bot1_id": {
+          "type": "string"
+        },
+        "bot2_id": {
+          "type": "string"
+        },
+        "winner_id": {
+          "type": "string"
+        },
+        "reset_match": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "current_match": {
+      "type": "object",
+      "description": "Current active match",
+      "properties": {
+        "bracket": {
+          "type": "string"
+        },
+        "round": {
+          "type": "number"
+        },
+        "match_number": {
+          "type": "number"
+        },
+        "bot1_id": {
+          "type": "string"
+        },
+        "bot2_id": {
+          "type": "string"
+        },
+        "bot1_unstuck": {
+          "type": "boolean",
+          "default": false
+        },
+        "bot2_unstuck": {
+          "type": "boolean",
+          "default": false
+        },
+        "winner_id": {
+          "type": "string"
+        }
+      }
+    },
+    "last_match_result": {
+      "type": "object",
+      "description": "Last completed match for overlay display",
+      "properties": {
+        "bot1_id": {
+          "type": "string"
+        },
+        "bot2_id": {
+          "type": "string"
+        },
+        "winner_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      }
+    },
+    "countdown_end": {
+      "type": "string",
+      "description": "Countdown timer end time"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -311,8 +311,11 @@ export default function Home() {
   useEffect(() => {
     const currMatch = tournament?.current_match;
     const prevMatch = prevMatchRef.current;
-    // Only clear overrideMatch when a NEW match starts (current_match goes from null to something)
-    if (!prevMatch && currMatch && !currMatch.match_over) setOverrideMatch(null);
+    // When a NEW match starts, clear the DB override
+    if (!prevMatch && currMatch && !currMatch.match_over && tournament?.next_match_override) {
+      base44.entities.Tournament.update(tournament.id, { next_match_override: null })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+    }
     // Clear localMatchOver when current_match is cleared
     if (!currMatch) setLocalMatchOver(null);
     prevMatchRef.current = currMatch ?? null;
@@ -355,7 +358,20 @@ export default function Home() {
   };
 
   const getNextReadyMatch = () => {
-    if (overrideMatch) return overrideMatch;
+    // Prefer DB-persisted override (so ESP32 controller also picks it up)
+    if (tournament?.next_match_override) {
+      const all = [
+        ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
+        ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' })),
+      ];
+      const ov = tournament.next_match_override;
+      if (ov.bracket === 'finals') {
+        const gf = tournament.grand_finals;
+        if (gf?.bot1_id && gf?.bot2_id && !gf?.winner_id) return { ...gf, bracket: 'finals' };
+      }
+      const found = all.find(m => m.bracket === ov.bracket && m.match_number === ov.match_number);
+      if (found) return found;
+    }
     const ready = getReadyMatches();
     return ready[0] || null;
   };
@@ -579,7 +595,7 @@ export default function Home() {
                           <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" />
                             <span className="text-green-400 font-bold tracking-widest uppercase text-sm">Next Match Ready</span>
-                            {overrideMatch && (
+                            {tournament?.next_match_override && (
                               <span className="ml-auto text-xs text-yellow-400 bg-yellow-900/40 px-2 py-0.5 rounded border border-yellow-700">Manual Override</span>
                             )}
                           </div>
@@ -600,15 +616,18 @@ export default function Home() {
                                 {readyMatches.map((m, idx) => {
                                   const b1 = bots.find(b => b.id === m.bot1_id);
                                   const b2 = bots.find(b => b.id === m.bot2_id);
-                                  const isSelected = overrideMatch
-                                    ? overrideMatch.match_number === m.match_number && overrideMatch.bracket === m.bracket
+                                  const dbOverride = tournament?.next_match_override;
+                                  const isSelected = dbOverride
+                                    ? dbOverride.match_number === m.match_number && dbOverride.bracket === m.bracket
                                     : idx === 0;
                                   return (
                                     <button
-                                      key={`${m.bracket}-${m.match_number}`}
-                                      onClick={() => {
-                                        setOverrideMatch(m);
-                                      }}
+                                     key={`${m.bracket}-${m.match_number}`}
+                                     onClick={() => {
+                                       base44.entities.Tournament.update(tournament.id, {
+                                         next_match_override: { bracket: m.bracket, match_number: m.match_number }
+                                       }).then(() => queryClient.invalidateQueries({ queryKey: ['tournaments'] }));
+                                     }}
                                       className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-colors ${
                                         isSelected ? 'bg-cyan-900/40 border-cyan-600 text-cyan-300' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-500'
                                       }`}
