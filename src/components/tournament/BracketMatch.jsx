@@ -7,7 +7,8 @@ export default function BracketMatch({
   isActive, 
   isNext,
   onSelectWinner,
-  compact = false 
+  compact = false,
+  matchLabel = null
 }) {
   const bot1 = bots.find(b => b.id === match.bot1_id);
   const bot2 = bots.find(b => b.id === match.bot2_id);
@@ -27,6 +28,16 @@ export default function BracketMatch({
       {isNext && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-cyan-500 text-black text-[10px] font-bold rounded animate-pulse">
           NEXT
+        </div>
+      )}
+      {matchLabel && !isNext && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-700 text-slate-300 text-[10px] font-bold rounded">
+          #{matchLabel}
+        </div>
+      )}
+      {matchLabel && isNext && (
+        <div className="absolute -top-5 right-0 px-1.5 py-0.5 bg-slate-800 text-slate-400 text-[9px] rounded">
+          #{matchLabel}
         </div>
       )}
       <div className={cn(

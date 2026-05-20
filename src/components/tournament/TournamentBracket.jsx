@@ -31,6 +31,23 @@ export default function TournamentBracket({
            current_match?.match_number === matchNum;
   };
 
+  // Build a global sequential match number map: WB rounds first, then LB rounds, then finals
+  const globalMatchNum = {};
+  let counter = 1;
+  const wbRoundsSorted = Object.keys(winnersRounds).sort((a, b) => a - b);
+  wbRoundsSorted.forEach(round => {
+    winnersRounds[round].sort((a, b) => a.match_number - b.match_number).forEach(m => {
+      globalMatchNum[`w-${m.round}-${m.match_number}`] = counter++;
+    });
+  });
+  const lbRoundsSorted = Object.keys(losersRounds).sort((a, b) => a - b);
+  lbRoundsSorted.forEach(round => {
+    losersRounds[round].sort((a, b) => a.match_number - b.match_number).forEach(m => {
+      globalMatchNum[`l-${m.round}-${m.match_number}`] = counter++;
+    });
+  });
+  // Grand finals gets the last number(s) assigned inline
+
   const isMatchNext = (bracket, round, matchNum) => {
     // Find next pending match
     if (!current_match) {
@@ -67,6 +84,7 @@ export default function TournamentBracket({
                     isActive={isMatchActive('winners', match.round, match.match_number)}
                     isNext={isMatchNext('winners', match.round, match.match_number)}
                     onSelectWinner={showControls ? onSelectWinner : undefined}
+                    matchLabel={globalMatchNum[`w-${match.round}-${match.match_number}`]}
                     compact
                   />
                 ))}
@@ -98,6 +116,7 @@ export default function TournamentBracket({
                       isActive={isMatchActive('losers', match.round, match.match_number)}
                       isNext={isMatchNext('losers', match.round, match.match_number)}
                       onSelectWinner={showControls ? onSelectWinner : undefined}
+                      matchLabel={globalMatchNum[`l-${match.round}-${match.match_number}`]}
                       compact
                     />
                   ))}
@@ -127,6 +146,7 @@ export default function TournamentBracket({
                 isActive={current_match?.bracket === 'finals'}
                 isNext={!current_match && grand_finals.bot1_id && grand_finals.bot2_id && !grand_finals.winner_id}
                 onSelectWinner={showControls ? onSelectWinner : undefined}
+                matchLabel={counter}
               />
             </div>
           </div>
