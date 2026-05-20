@@ -577,47 +577,7 @@ export default function Home() {
                             <span>{nb2?.name || 'TBD'}</span>
                           </div>
 
-                          {isAuthenticated && (
-                            <div className="flex justify-center">
-                              <Button
-                                onClick={async () => {
-                                  const m = nextMatch;
-                                  const bracketUpdates = {};
-                                  if (m.bracket === 'winners') {
-                                    bracketUpdates.winners_bracket = tournament.winners_bracket.map(bm =>
-                                      bm.round === m.round && bm.match_number === m.match_number ? { ...bm, status: 'in_progress' } : bm
-                                    );
-                                  } else if (m.bracket === 'losers') {
-                                    bracketUpdates.losers_bracket = tournament.losers_bracket.map(bm =>
-                                      bm.round === m.round && bm.match_number === m.match_number ? { ...bm, status: 'in_progress' } : bm
-                                    );
-                                  } else if (m.bracket === 'finals') {
-                                    bracketUpdates.grand_finals = { ...tournament.grand_finals, status: 'in_progress' };
-                                  }
-                                  const nowMs = Date.now();
-                                  const countdownEndMs = nowMs + 180000;
-                                  await base44.entities.Tournament.update(tournament.id, {
-                                    ...bracketUpdates,
-                                    current_match: {
-                                      bracket: m.bracket, round: m.round, match_number: m.match_number,
-                                      bot1_id: m.bot1_id, bot2_id: m.bot2_id,
-                                      match_over: false, bot1_unstuck: false, bot2_unstuck: false
-                                    },
-                                    is_paused: false,
-                                    paused_time_remaining: 180,
-                                    countdown_end: new Date(countdownEndMs).toISOString()
-                                  });
-                                  queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-                                  setOverrideMatch(null);
-                                }}
-                                className="bg-green-600 hover:bg-green-700 font-bold px-8"
-                              >
-                                ▶ Start Match
-                              </Button>
-                            </div>
-                          )}
-
-                          <p className="text-center text-slate-400 text-xs">Or press the green button on the controller</p>
+                          <p className="text-center text-slate-400 text-xs">Press the green button on the controller to start</p>
 
                           {isAuthenticated && readyMatches.length > 1 && (
                             <div className="pt-2 border-t border-slate-700">
