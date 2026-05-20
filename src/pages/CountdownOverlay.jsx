@@ -253,7 +253,7 @@ export default function CountdownOverlay() {
                     <img
                       src={bot2.image_url}
                       alt={bot2.name}
-                      className="w-48 h-48 rounded-full object-cover border-4 border-purple-500/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]"
+                      className="w-[448px] h-[448px] rounded-full object-cover border-4 border-purple-500/60 shadow-[0_0_40px_rgba(168,85,247,0.4)]"
                     />
                   )}
                   <div className="text-white text-4xl font-black tracking-wider">{bot2?.name || 'TBD'}</div>
