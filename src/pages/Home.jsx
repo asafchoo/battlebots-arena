@@ -847,6 +847,26 @@ export default function Home() {
 
                           <p className="text-center text-slate-400 text-xs">Press the green button on the controller to start</p>
 
+                          {isAuthenticated && nextMatch && (
+                            <div className="flex items-center gap-3 pt-1">
+                              <span className="text-xs text-slate-500 uppercase tracking-wider whitespace-nowrap">הכרע:</span>
+                              <Button
+                                onClick={() => selectWinnerMutation.mutate(nextMatch.bot1_id)}
+                                disabled={selectWinnerMutation.isPending}
+                                className="flex-1 bg-cyan-700 hover:bg-cyan-600 font-bold py-2"
+                              >
+                                {nb1?.name || 'Bot 1'}
+                              </Button>
+                              <Button
+                                onClick={() => selectWinnerMutation.mutate(nextMatch.bot2_id)}
+                                disabled={selectWinnerMutation.isPending}
+                                className="flex-1 bg-purple-700 hover:bg-purple-600 font-bold py-2"
+                              >
+                                {nb2?.name || 'Bot 2'}
+                              </Button>
+                            </div>
+                          )}
+
                           {isAuthenticated && readyMatches.length > 1 && (
                             <div className="pt-2 border-t border-slate-700">
                               <p className="text-xs text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
