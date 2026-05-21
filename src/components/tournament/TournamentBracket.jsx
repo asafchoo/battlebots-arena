@@ -74,7 +74,7 @@ export default function TournamentBracket({
           {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
             <div key={`w-${round}`} className="flex flex-col gap-4 min-w-[135px]">
               <div className="text-xs text-slate-500 text-center uppercase tracking-wider">
-                Round {round}
+                {Number(round) === 0 ? 'Play-In' : `Round ${round}`}
               </div>
               <div className="flex flex-col gap-4 justify-around flex-1">
                 {winnersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (

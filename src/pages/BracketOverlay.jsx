@@ -71,14 +71,16 @@ export default function BracketOverlay() {
 
   const winnersRounds = {};
   winners_bracket.forEach(m => {
-    if (!winnersRounds[m.round]) winnersRounds[m.round] = [];
-    winnersRounds[m.round].push(m);
+    const r = Number(m.round);
+    if (!winnersRounds[r]) winnersRounds[r] = [];
+    winnersRounds[r].push(m);
   });
 
   const losersRounds = {};
   losers_bracket.forEach(m => {
-    if (!losersRounds[m.round]) losersRounds[m.round] = [];
-    losersRounds[m.round].push(m);
+    const r = Number(m.round);
+    if (!losersRounds[r]) losersRounds[r] = [];
+    losersRounds[r].push(m);
   });
 
   const getBotName = (botId) => {
@@ -88,8 +90,7 @@ export default function BracketOverlay() {
 
   const isMatchActive = (bracket, round, matchNum) => {
     return current_match?.bracket === bracket && 
-           current_match?.round === round && 
-           current_match?.match_number === matchNum;
+           Number(current_match?.match_number) === Number(matchNum);
   };
 
   const isMatchNext = (match, bracket) => {
@@ -99,7 +100,7 @@ export default function BracketOverlay() {
     if (allPending.length > 0) {
       const first = allPending[0];
       const matchBracket = winners_bracket.includes(first) ? 'winners' : 'losers';
-      return matchBracket === bracket && first.round === match.round && first.match_number === match.match_number;
+      return matchBracket === bracket && Number(first.match_number) === Number(match.match_number);
     }
     return false;
   };
@@ -251,7 +252,7 @@ export default function BracketOverlay() {
                   return (
                     <div key={`w-${round}`} className="flex flex-col flex-1">
                       <div className="text-[10px] text-cyan-400/70 text-center uppercase tracking-wider font-bold mb-2">
-                        Round {round}
+                        {Number(round) === 0 ? 'Play-In' : `Round ${round}`}
                       </div>
                       <div className="flex-1 relative">
                         {matches.map((match, i) => {
