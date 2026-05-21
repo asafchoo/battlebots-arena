@@ -50,13 +50,22 @@ export default function TournamentBracket({
   // Grand finals gets the last number(s) assigned inline
 
   const isMatchNext = (bracket, round, matchNum) => {
-    // Find next pending match
     if (!current_match) {
-      const firstPending = [...winners_bracket, ...losers_bracket]
-        .find(m => m.status === 'pending' && m.bot1_id && m.bot2_id);
-      if (firstPending) {
-        const matchBracket = winners_bracket.includes(firstPending) ? 'winners' : 'losers';
-        return matchBracket === bracket && Number(firstPending.match_number) === Number(matchNum);
+      // Sort all pending+ready matches by match_number to find the lowest
+      const allPending = [...winners_bracket, ...losers_bracket]
+        .filter(m => (m.status === 'pending' || m.status === 'pending_hold') && m.bot1_id && m.bot2_id)
+        .sort((a, b) => Number(a.match_number) - Number(b.match_number));
+      if (allPending.length > 0) {
+        // Prefer the override if set
+        const override = tournament?.next_match_override;
+        const target = override
+          ? allPending.find(m => {
+              const mb = winners_bracket.some(x => Number(x.match_number) === Number(m.match_number)) ? 'winners' : 'losers';
+              return mb === override.bracket && Number(m.match_number) === Number(override.match_number);
+            }) || allPending[0]
+          : allPending[0];
+        const matchBracket = winners_bracket.some(x => Number(x.match_number) === Number(target.match_number)) ? 'winners' : 'losers';
+        return matchBracket === bracket && Number(target.match_number) === Number(matchNum);
       }
     }
     return false;
