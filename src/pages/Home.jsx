@@ -16,7 +16,7 @@ import TournamentBracket from "@/components/tournament/TournamentBracket";
 import { useAuth } from "@/lib/AuthContext";
 import {
   Plus, Trophy, Users, Swords, ExternalLink,
-  Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw, ChevronDown
+  Shuffle, AlertCircle, Timer, Monitor, Loader2, RotateCcw, ChevronDown, Zap
 } from "lucide-react";
 
 export default function Home() {
@@ -491,6 +491,84 @@ export default function Home() {
     prevCountdownRef.current = countdownEnd;
   }, [tournament?.countdown_end, tournament?.is_paused]);
 
+  const [simulating, setSimulating] = useState(false);
+
+  const simulateTournament = async () => {
+    if (!tournament) return;
+    setSimulating(true);
+
+    // Deep clone state
+    let wb = tournament.winners_bracket.map(m => ({ ...m }));
+    let lb = tournament.losers_bracket.map(m => ({ ...m }));
+    let gf = { ...tournament.grand_finals };
+    const botIds = bots.map(b => b.id);
+
+    const pickWinner = (m) => Math.random() < 0.5 ? m.bot1_id : m.bot2_id;
+
+    const fillSlotLocal = (arr, match_number, slot, botId) => {
+      return arr.map(m => {
+        if (Number(m.match_number) !== Number(match_number)) return m;
+        return { ...m, [slot]: botId };
+      });
+    };
+
+    // Simulate all matches in order 1..30 then grand finals
+    for (let mn = 1; mn <= 30; mn++) {
+      const wbMatch = wb.find(m => Number(m.match_number) === mn);
+      const lbMatch = lb.find(m => Number(m.match_number) === mn);
+      const match = wbMatch || lbMatch;
+      if (!match) continue;
+      if (!match.bot1_id || !match.bot2_id) continue;
+
+      const winnerId = pickWinner(match);
+      const loserId = match.bot1_id === winnerId ? match.bot2_id : match.bot1_id;
+
+      if (wbMatch) {
+        wb = wb.map(m => Number(m.match_number) === mn ? { ...m, winner_id: winnerId, status: 'complete' } : m);
+        const wAdv = WINNER_ADV[mn];
+        if (wAdv?.bracket === 'winners') wb = fillSlotLocal(wb, wAdv.match, wAdv.slot, winnerId);
+        else if (wAdv?.bracket === 'finals') gf = { ...gf, [wAdv.slot]: winnerId };
+        const lAdv = LOSER_ADV[mn];
+        if (lAdv?.bracket === 'losers') lb = fillSlotLocal(lb, lAdv.match, lAdv.slot, loserId);
+        // else: play-in loser = eliminated (no action needed in simulation)
+      } else {
+        lb = lb.map(m => Number(m.match_number) === mn ? { ...m, winner_id: winnerId, status: 'complete' } : m);
+        const wAdv = WINNER_ADV[mn];
+        if (wAdv?.bracket === 'losers') lb = fillSlotLocal(lb, wAdv.match, wAdv.slot, winnerId);
+        else if (wAdv?.bracket === 'finals') gf = { ...gf, [wAdv.slot]: winnerId };
+      }
+    }
+
+    // Grand Finals
+    if (gf.bot1_id && gf.bot2_id) {
+      const gfWinner = pickWinner(gf);
+      const gfLoser = gf.bot1_id === gfWinner ? gf.bot2_id : gf.bot1_id;
+      const wfFromWB = gf.bot1_id;
+      if (gfLoser === wfFromWB) {
+        // LB finalist won first GF → reset match
+        const resetWinner = pickWinner(gf);
+        gf = { ...gf, winner_id: resetWinner, status: 'complete', reset_match: true };
+        await base44.entities.Bot.update(resetWinner, { status: 'champion' });
+      } else {
+        gf = { ...gf, winner_id: gfWinner, status: 'complete' };
+        await base44.entities.Bot.update(gfWinner, { status: 'champion' });
+        await base44.entities.Bot.update(gfLoser, { status: 'eliminated' });
+      }
+    }
+
+    await base44.entities.Tournament.update(tournament.id, {
+      winners_bracket: wb,
+      losers_bracket: lb,
+      grand_finals: gf,
+      status: 'completed',
+      current_match: null,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    queryClient.invalidateQueries({ queryKey: ['bots'] });
+    setSimulating(false);
+  };
+
   const isLoading = botsLoading || tourneysLoading;
 
   const getReadyMatches = () => {
@@ -915,6 +993,18 @@ export default function Home() {
                           </Badge>
                         )}
                         {isAuthenticated && (
+                          <div className="flex items-center gap-2">
+                            {tournament.status === 'in_progress' && !tournament.current_match && (
+                              <Button
+                                size="sm"
+                                onClick={simulateTournament}
+                                disabled={simulating}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-xs text-black font-bold"
+                              >
+                                {simulating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Zap className="w-3 h-3 mr-1" />}
+                                Simulate
+                              </Button>
+                            )}
                           <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
                             <DialogTrigger asChild>
                               <Button size="sm" variant="destructive" className="bg-red-700 hover:bg-red-800 text-xs">
@@ -961,6 +1051,7 @@ export default function Home() {
                               </div>
                             </DialogContent>
                           </Dialog>
+                          </div>
                         )}
                       </div>
                     </CardTitle>
