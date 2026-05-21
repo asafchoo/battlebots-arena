@@ -15,9 +15,8 @@ export default function BracketMatch({
   const bot1 = bots.find(b => b.id === match.bot1_id);
   const bot2 = bots.find(b => b.id === match.bot2_id);
   
-  // Can manually pick winner when: active match OR both bots present and no winner yet
-  const canPickWinner = onSelectWinner && !match.winner_id && bot1 && bot2 && 
-    (isActive || match.status === 'in_progress');
+  // Can manually pick winner when: both bots present and no winner yet (any status)
+  const canPickWinner = onSelectWinner && !match.winner_id && bot1 && bot2;
 
   const getSlotStyle = (botId) => {
     if (match.winner_id === botId) return "bg-green-600/30 border-green-500 text-green-400";
