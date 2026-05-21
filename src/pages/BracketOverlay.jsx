@@ -123,27 +123,31 @@ export default function BracketOverlay() {
           } animate-pulse`} />
         )}
         
-        <div className={`relative p-1 rounded-lg border backdrop-blur-md ${
+        <div className={`relative p-1.5 rounded-lg border backdrop-blur-md ${
           isActive 
             ? 'bg-cyan-900/90 border-cyan-300 shadow-lg shadow-cyan-500/40' 
             : isNext
               ? 'bg-yellow-900/85 border-yellow-400'
               : 'bg-slate-900/85 border-slate-500'
         }`}>
+          {/* Match number badge */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-slate-700 text-slate-300 text-[9px] font-bold rounded z-10">
+            #{match.match_number ?? ''}
+          </div>
           {isActive && (
-            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1 py-0.5 bg-red-500 text-white text-[8px] font-black rounded animate-pulse shadow-lg shadow-red-500/50">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-black rounded animate-pulse shadow-lg shadow-red-500/50 z-20">
               <Zap className="w-3 h-3" />
               LIVE
             </div>
           )}
           {isNext && !isActive && (
-            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-yellow-400 text-black text-[8px] font-black rounded animate-pulse shadow-lg shadow-yellow-400/50">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-yellow-400 text-black text-[9px] font-black rounded animate-pulse shadow-lg shadow-yellow-400/50 z-20">
               NEXT
             </div>
           )}
 
           {/* Bot 1 */}
-          <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold ${
             match.winner_id === match.bot1_id 
               ? 'bg-green-600/70 text-green-100 border border-green-400' 
               : match.winner_id 
@@ -151,15 +155,15 @@ export default function BracketOverlay() {
                 : 'text-white bg-slate-700/60'
           }`}>
             {bot1?.image_url && (
-              <img src={bot1.image_url} className="w-5 h-5 rounded object-cover" alt="" />
+              <img src={bot1.image_url} className="w-5 h-5 rounded object-cover flex-shrink-0" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot1_id)}</span>
           </div>
 
-          <div className="text-center text-[7px] text-cyan-400/70 font-mono my-0.5 font-bold">VS</div>
+          <div className="text-center text-[8px] text-cyan-400/70 font-mono my-0.5 font-bold">VS</div>
 
           {/* Bot 2 */}
-          <div className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] font-semibold ${
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold ${
             match.winner_id === match.bot2_id 
               ? 'bg-green-600/70 text-green-100 border border-green-400' 
               : match.winner_id 
@@ -167,7 +171,7 @@ export default function BracketOverlay() {
                 : 'text-white bg-slate-700/60'
           }`}>
             {bot2?.image_url && (
-              <img src={bot2.image_url} className="w-5 h-5 rounded object-cover" alt="" />
+              <img src={bot2.image_url} className="w-5 h-5 rounded object-cover flex-shrink-0" alt="" />
             )}
             <span className="truncate font-mono">{getBotName(match.bot2_id)}</span>
           </div>
@@ -177,7 +181,7 @@ export default function BracketOverlay() {
   };
 
   return (
-    <div className={`fixed inset-0 w-screen h-screen p-4 font-mono text-white overflow-auto ${
+    <div className={`fixed inset-0 w-screen h-screen overflow-hidden font-mono text-white ${
       glitchActive ? 'animate-pulse' : ''
     }`}>
       <style>{`
@@ -192,12 +196,10 @@ export default function BracketOverlay() {
           background: #000 !important;
         }
         ::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { scrollbar-width: none; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
       
       {/* Background Image */}
-      <div className="fixed inset-0 z-0">
+      <div className="absolute inset-0 z-0">
         <img 
           src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696571612acba2d4bc583a5b/44d2fbb31_SponsorsABattlebot.png" 
           alt="Background"
@@ -207,24 +209,42 @@ export default function BracketOverlay() {
       </div>
       
       {/* Scanline effect */}
-      <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] z-50" />
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,_rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] z-50" />
 
-      <div className="relative z-10 flex flex-col gap-3 h-full items-center justify-center">
+      {/* 16:9 scaled content container */}
+      <div
+        className="absolute inset-0 z-10 flex items-center justify-center"
+        style={{ overflow: 'hidden' }}
+      >
+        <div
+          style={{
+            width: '1920px',
+            height: '1080px',
+            transform: `scale(${Math.min(window.innerWidth / 1920, window.innerHeight / 1080)})`,
+            transformOrigin: 'center center',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: '-540px',
+            marginLeft: '-960px',
+          }}
+          className="flex flex-col gap-4 p-8 justify-center"
+        >
         {/* Winners Bracket */}
         {showBracket === 'winners' && (
-          <div className="space-y-1 w-full">
-            <div className="flex items-center gap-2 text-cyan-300 text-sm">
-              <Trophy className="w-4 h-4" />
-              <span className="tracking-widest font-bold text-xs">WINNERS BRACKET</span>
+          <div className="space-y-2 w-full">
+            <div className="flex items-center gap-2 text-cyan-300">
+              <Trophy className="w-5 h-5" />
+              <span className="tracking-widest font-bold text-sm">WINNERS BRACKET</span>
               <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/70 to-transparent" />
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-4">
               {Object.keys(winnersRounds).sort((a, b) => a - b).map(round => (
-                <div key={`w-${round}`} className="flex flex-col gap-1 min-w-[130px]">
-                  <div className="text-[8px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
-                    R{round}
+                <div key={`w-${round}`} className="flex flex-col gap-2 flex-1">
+                  <div className="text-[10px] text-cyan-400/70 text-center uppercase tracking-wider font-bold">
+                    Round {round}
                   </div>
-                  <div className="flex flex-col gap-1.5 justify-around flex-1">
+                  <div className="flex flex-col gap-3 justify-around flex-1">
                     {winnersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
                       <MatchSlot 
                         key={`w-${match.round}-${match.match_number}`} 
@@ -241,19 +261,19 @@ export default function BracketOverlay() {
 
         {/* Losers Bracket */}
         {showBracket === 'losers' && losers_bracket.length > 0 && (
-          <div className="space-y-1 w-full">
-            <div className="flex items-center gap-2 text-red-300 text-sm">
-              <Skull className="w-4 h-4" />
-              <span className="tracking-widest font-bold text-xs">LOSERS BRACKET</span>
+          <div className="space-y-2 w-full">
+            <div className="flex items-center gap-2 text-red-300">
+              <Skull className="w-5 h-5" />
+              <span className="tracking-widest font-bold text-sm">LOSERS BRACKET</span>
               <div className="flex-1 h-px bg-gradient-to-r from-red-400/70 to-transparent" />
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-4">
               {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-                <div key={`l-${round}`} className="flex flex-col gap-1 min-w-[130px]">
-                  <div className="text-[8px] text-red-400/70 text-center uppercase tracking-wider font-bold">
-                    R{round}
+                <div key={`l-${round}`} className="flex flex-col gap-2 flex-1">
+                  <div className="text-[10px] text-red-400/70 text-center uppercase tracking-wider font-bold">
+                    Round {round}
                   </div>
-                  <div className="flex flex-col gap-1.5 justify-around flex-1">
+                  <div className="flex flex-col gap-3 justify-around flex-1">
                     {losersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
                       <MatchSlot 
                         key={`l-${match.round}-${match.match_number}`} 
@@ -270,14 +290,14 @@ export default function BracketOverlay() {
 
         {/* Grand Finals */}
         {grand_finals && (grand_finals.bot1_id || grand_finals.bot2_id) && (
-          <div className="space-y-1 mt-4 flex flex-col items-center">
-            <div className="flex items-center justify-center gap-2 text-yellow-300 text-sm">
-              <Trophy className="w-4 h-4" />
-              <span className="tracking-widest font-bold text-[10px]">GRAND FINALS</span>
-              <Trophy className="w-4 h-4" />
+          <div className="space-y-2 flex flex-col items-center">
+            <div className="flex items-center justify-center gap-2 text-yellow-300">
+              <Trophy className="w-5 h-5" />
+              <span className="tracking-widest font-bold text-sm">GRAND FINALS</span>
+              <Trophy className="w-5 h-5" />
             </div>
             <div className="flex justify-center">
-              <div className="w-[130px]">
+              <div className="w-48">
                 <MatchSlot 
                   match={{ ...grand_finals, round: 0, match_number: 0 }} 
                   bracket="finals" 
@@ -286,6 +306,7 @@ export default function BracketOverlay() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Winner Announcement Overlay */}
