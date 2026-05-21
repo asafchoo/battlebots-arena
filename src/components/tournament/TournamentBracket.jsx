@@ -15,14 +15,16 @@ export default function TournamentBracket({
   // Group matches by round
   const winnersRounds = {};
   winners_bracket.forEach(m => {
-    if (!winnersRounds[m.round]) winnersRounds[m.round] = [];
-    winnersRounds[m.round].push(m);
+    const r = Number(m.round);
+    if (!winnersRounds[r]) winnersRounds[r] = [];
+    winnersRounds[r].push(m);
   });
 
   const losersRounds = {};
   losers_bracket.forEach(m => {
-    if (!losersRounds[m.round]) losersRounds[m.round] = [];
-    losersRounds[m.round].push(m);
+    const r = Number(m.round);
+    if (!losersRounds[r]) losersRounds[r] = [];
+    losersRounds[r].push(m);
   });
 
   const isMatchActive = (bracket, round, matchNum) => {
@@ -54,7 +56,7 @@ export default function TournamentBracket({
         .find(m => m.status === 'pending' && m.bot1_id && m.bot2_id);
       if (firstPending) {
         const matchBracket = winners_bracket.includes(firstPending) ? 'winners' : 'losers';
-        return matchBracket === bracket && firstPending.round === round && firstPending.match_number === matchNum;
+        return matchBracket === bracket && Number(firstPending.match_number) === Number(matchNum);
       }
     }
     return false;
