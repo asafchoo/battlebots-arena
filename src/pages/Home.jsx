@@ -492,6 +492,7 @@ export default function Home() {
   }, [tournament?.countdown_end, tournament?.is_paused]);
 
   const [simulating, setSimulating] = useState(false);
+  const [activeTab, setActiveTab] = useState('registration');
 
   const simulateTournament = async () => {
     if (!tournament) return;
@@ -568,6 +569,11 @@ export default function Home() {
     queryClient.invalidateQueries({ queryKey: ['bots'] });
     setSimulating(false);
   };
+
+  // Auto-switch to bracket tab when tournament starts
+  React.useEffect(() => {
+    if (tournament?.status === 'in_progress') setActiveTab('bracket');
+  }, [tournament?.status]);
 
   const isLoading = botsLoading || tourneysLoading;
 
@@ -658,7 +664,7 @@ export default function Home() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <Tabs defaultValue={tournament?.status === 'in_progress' ? 'bracket' : 'registration'} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-slate-800/50">
             <TabsTrigger value="registration">Registration</TabsTrigger>
             <TabsTrigger value="bracket">Tournament Bracket</TabsTrigger>
