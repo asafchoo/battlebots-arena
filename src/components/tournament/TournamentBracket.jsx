@@ -95,37 +95,54 @@ export default function TournamentBracket({
       </div>
 
       {/* Losers Bracket */}
-      {losers_bracket.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-bold text-red-400">
-            <Skull className="w-5 h-5" />
-            <span>LOSERS BRACKET</span>
+      {losers_bracket.length > 0 && (() => {
+        const lbRounds = Object.keys(losersRounds).sort((a, b) => a - b);
+        const maxMatches = Math.max(...lbRounds.map(r => losersRounds[r].length));
+        const SLOT_H = 100; // px per match slot at max density
+        const ARENA_H = maxMatches * SLOT_H;
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-lg font-bold text-red-400">
+              <Skull className="w-5 h-5" />
+              <span>LOSERS BRACKET</span>
+            </div>
+            <div className="flex gap-6 overflow-x-auto pb-4">
+              {lbRounds.map(round => {
+                const matches = losersRounds[round].sort((a, b) => a.match_number - b.match_number);
+                const n = matches.length;
+                return (
+                  <div key={`l-${round}`} className="flex flex-col min-w-[135px]">
+                    <div className="text-xs text-slate-500 text-center uppercase tracking-wider mb-2">
+                      Round {round}
+                    </div>
+                    <div className="relative" style={{ height: `${ARENA_H}px` }}>
+                      {matches.map((match, i) => {
+                        const topPct = ((i + 0.5) / n) * 100;
+                        return (
+                          <div
+                            key={`l-${match.round}-${match.match_number}`}
+                            style={{ position: 'absolute', top: `${topPct}%`, transform: 'translateY(-50%)', left: 0, right: 0 }}
+                          >
+                            <BracketMatch
+                              match={match}
+                              bots={bots}
+                              isActive={isMatchActive('losers', match.round, match.match_number)}
+                              isNext={isMatchNext('losers', match.round, match.match_number)}
+                              onSelectWinner={showControls ? onSelectWinner : undefined}
+                              matchLabel={globalMatchNum[`l-${match.round}-${match.match_number}`]}
+                              compact
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="flex gap-6 overflow-x-auto pb-4">
-            {Object.keys(losersRounds).sort((a, b) => a - b).map(round => (
-              <div key={`l-${round}`} className="flex flex-col gap-4 min-w-[135px]">
-                <div className="text-xs text-slate-500 text-center uppercase tracking-wider">
-                  Round {round}
-                </div>
-                <div className="flex flex-col gap-4 justify-around flex-1">
-                  {losersRounds[round].sort((a, b) => a.match_number - b.match_number).map(match => (
-                    <BracketMatch
-                      key={`l-${match.round}-${match.match_number}`}
-                      match={match}
-                      bots={bots}
-                      isActive={isMatchActive('losers', match.round, match.match_number)}
-                      isNext={isMatchNext('losers', match.round, match.match_number)}
-                      onSelectWinner={showControls ? onSelectWinner : undefined}
-                      matchLabel={globalMatchNum[`l-${match.round}-${match.match_number}`]}
-                      compact
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Grand Finals */}
       {grand_finals && (

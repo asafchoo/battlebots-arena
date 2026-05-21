@@ -278,26 +278,30 @@ export default function BracketOverlay() {
         {/* Losers Bracket */}
         {showBracket === 'losers' && losers_bracket.length > 0 && (() => {
           const rounds = Object.keys(losersRounds).sort((a, b) => a - b);
+          // max matches in any round = R1 has 4
           const maxMatches = Math.max(...rounds.map(r => losersRounds[r].length));
-          const ARENA_H = 880;
+          const SLOT_H = 180; // px per match slot at max density
+          const HEADER_H = 40;
+          const ARENA_H = maxMatches * SLOT_H;
           return (
-            <div className="w-full" style={{ height: `${ARENA_H}px` }}>
-              <div className="flex items-center gap-2 text-red-300 mb-3">
+            <div className="w-full flex flex-col" style={{ height: `${ARENA_H + HEADER_H}px` }}>
+              <div className="flex items-center gap-2 text-red-300 mb-3 flex-shrink-0">
                 <Skull className="w-5 h-5" />
                 <span className="tracking-widest font-bold text-sm">LOSERS BRACKET</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-red-400/70 to-transparent" />
               </div>
-              <div className="flex gap-3 h-full">
+              <div className="flex gap-3" style={{ height: `${ARENA_H}px` }}>
                 {rounds.map(round => {
                   const matches = losersRounds[round].sort((a, b) => a.match_number - b.match_number);
                   const n = matches.length;
                   return (
                     <div key={`l-${round}`} className="flex flex-col flex-1">
-                      <div className="text-[10px] text-red-400/70 text-center uppercase tracking-wider font-bold mb-2">
+                      <div className="text-[10px] text-red-400/70 text-center uppercase tracking-wider font-bold mb-2 flex-shrink-0">
                         Round {round}
                       </div>
-                      <div className="flex-1 relative">
+                      <div className="relative flex-1">
                         {matches.map((match, i) => {
+                          // each match centered in its equal slot within the column
                           const topPct = ((i + 0.5) / n) * 100;
                           return (
                             <div
