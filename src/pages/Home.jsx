@@ -337,12 +337,14 @@ export default function Home() {
 
   const selectWinnerMutation = useMutation({
     mutationFn: async (winnerId) => {
-      if (!tournament?.current_match) return;
-      const { bracket, round } = tournament.current_match;
-      const match_number = Number(tournament.current_match.match_number);
-      const loserId = tournament.current_match.bot1_id === winnerId
-        ? tournament.current_match.bot2_id
-        : tournament.current_match.bot1_id;
+      // Use current_match if active, otherwise use the next ready match (manual override)
+      const matchSource = tournament?.current_match || getNextReadyMatch();
+      if (!matchSource) return;
+      const { bracket, round } = matchSource;
+      const match_number = Number(matchSource.match_number);
+      const loserId = matchSource.bot1_id === winnerId
+        ? matchSource.bot2_id
+        : matchSource.bot1_id;
 
       let updates = {};
 
@@ -412,17 +414,23 @@ export default function Home() {
       }
 
       updates.last_match_result = {
-        bot1_id: tournament.current_match.bot1_id,
-        bot2_id: tournament.current_match.bot2_id,
+        bot1_id: matchSource.bot1_id,
+        bot2_id: matchSource.bot2_id,
         winner_id: winnerId,
         timestamp: new Date().toISOString()
       };
-      updates.current_match = { ...tournament.current_match, winner_id: winnerId };
-      await base44.entities.Tournament.update(tournament.id, updates);
-      setTimeout(async () => {
-        await base44.entities.Tournament.update(tournament.id, { current_match: null });
-        queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-      }, 5000);
+      // Only update current_match if it was active; if manual override, clear it directly
+      if (tournament?.current_match) {
+        updates.current_match = { ...tournament.current_match, winner_id: winnerId };
+        await base44.entities.Tournament.update(tournament.id, updates);
+        setTimeout(async () => {
+          await base44.entities.Tournament.update(tournament.id, { current_match: null });
+          queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+        }, 5000);
+      } else {
+        updates.current_match = null;
+        await base44.entities.Tournament.update(tournament.id, updates);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
