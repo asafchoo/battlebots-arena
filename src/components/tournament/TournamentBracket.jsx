@@ -27,8 +27,7 @@ export default function TournamentBracket({
 
   const isMatchActive = (bracket, round, matchNum) => {
     return current_match?.bracket === bracket && 
-           current_match?.round === round && 
-           current_match?.match_number === matchNum;
+           Number(current_match?.match_number) === Number(matchNum);
   };
 
   // Build a global sequential match number map: WB rounds first, then LB rounds, then finals

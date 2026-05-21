@@ -253,9 +253,10 @@ export default function Home() {
   });
 
   // Helper: fill a slot in an array of matches and mark ready_since if both slots filled
-  const fillSlot = (matches, round, match_number, slot, botId) => {
+  const fillSlot = (matches, _round, match_number, slot, botId) => {
+    const targetMatch = Number(match_number);
     return matches.map(m => {
-      if (m.round !== round || m.match_number !== match_number) return m;
+      if (Number(m.match_number) !== targetMatch) return m;
       const updated = { ...m, [slot]: botId };
       const other = slot === 'bot1_id' ? 'bot2_id' : 'bot1_id';
       if (updated[other]) updated.ready_since = new Date().toISOString();
@@ -337,7 +338,8 @@ export default function Home() {
   const selectWinnerMutation = useMutation({
     mutationFn: async (winnerId) => {
       if (!tournament?.current_match) return;
-      const { bracket, round, match_number } = tournament.current_match;
+      const { bracket, round } = tournament.current_match;
+      const match_number = Number(tournament.current_match.match_number);
       const loserId = tournament.current_match.bot1_id === winnerId
         ? tournament.current_match.bot2_id
         : tournament.current_match.bot1_id;
@@ -354,7 +356,7 @@ export default function Home() {
         const wAdv = WINNER_ADV[match_number];
         if (wAdv) {
           if (wAdv.bracket === 'winners') {
-            wb = fillSlot(wb, wb.find(m => m.match_number === wAdv.match)?.round, wAdv.match, wAdv.slot, winnerId);
+            wb = fillSlot(wb, null, wAdv.match, wAdv.slot, winnerId);
           } else if (wAdv.bracket === 'finals') {
             updates.grand_finals = { ...(updates.grand_finals || tournament.grand_finals), [wAdv.slot]: winnerId };
           }
@@ -364,7 +366,7 @@ export default function Home() {
         if (loserId) {
           const lAdv = LOSER_ADV[match_number];
           if (lAdv) {
-            lb = fillSlot(lb, lb.find(m => m.match_number === lAdv.match)?.round, lAdv.match, lAdv.slot, loserId);
+            lb = fillSlot(lb, null, lAdv.match, lAdv.slot, loserId);
           } else {
             // loser is eliminated (play-in loser)
             await base44.entities.Bot.update(loserId, { status: 'eliminated' });
@@ -383,7 +385,7 @@ export default function Home() {
         const wAdv = WINNER_ADV[match_number];
         if (wAdv) {
           if (wAdv.bracket === 'losers') {
-            lb = fillSlot(lb, lb.find(m => m.match_number === wAdv.match)?.round, wAdv.match, wAdv.slot, winnerId);
+            lb = fillSlot(lb, null, wAdv.match, wAdv.slot, winnerId);
           } else if (wAdv.bracket === 'finals') {
             updates.grand_finals = { ...(updates.grand_finals || tournament.grand_finals), [wAdv.slot]: winnerId };
           }
