@@ -212,25 +212,25 @@ export default function Home() {
       ];
 
       const lb = [
-        // LB R1
-        { round: 1, match_number: 17, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L2 vs L3
-        { round: 1, match_number: 18, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L4 vs L5
-        { round: 1, match_number: 19, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L6 vs L7
-        { round: 1, match_number: 20, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L8 vs L9
-        // LB R2
+        // LB R1: WB R1 losers pair up (4 matches)
+        { round: 1, match_number: 17, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L8 vs L1(play-in loser... but L1=eliminated) → L8 vs L9
+        { round: 1, match_number: 18, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L7 vs L6
+        { round: 1, match_number: 19, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L4 vs L3
+        { round: 1, match_number: 20, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L2 vs L9... 
+        // LB R2: WB R2 losers vs LB R1 winners (4 matches)
         { round: 2, match_number: 21, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L10 vs W17
         { round: 2, match_number: 22, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L11 vs W18
         { round: 2, match_number: 23, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L12 vs W19
         { round: 2, match_number: 24, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L13 vs W20
-        // LB R3
+        // LB R3: LB R2 winners pair up (2 matches)
         { round: 3, match_number: 25, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W21 vs W22
         { round: 3, match_number: 26, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W23 vs W24
-        // LB R4
+        // LB R4: WB R3 losers vs LB R3 winners (2 matches)
         { round: 4, match_number: 27, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L14 vs W25
         { round: 4, match_number: 28, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L15 vs W26
-        // LB R5
+        // LB R5: LB R4 winners (1 match)
         { round: 5, match_number: 29, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W27 vs W28
-        // LB R6
+        // LB R6: WB R4 loser vs LB R5 winner → GF bot2
         { round: 6, match_number: 30, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L16 vs W29
       ];
 
