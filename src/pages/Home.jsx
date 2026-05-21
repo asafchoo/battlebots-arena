@@ -338,7 +338,21 @@ export default function Home() {
   const selectWinnerMutation = useMutation({
     mutationFn: async (winnerId) => {
       // Use current_match if active, otherwise use the next ready match (manual override)
-      const matchSource = tournament?.current_match || getNextReadyMatch();
+      // Find the actual match object from the bracket (not cached nextMatch which may be stale)
+      const getActiveMatch = () => {
+        if (tournament?.current_match) return tournament.current_match;
+        const allMatches = [
+          ...(tournament.winners_bracket || []).map(m => ({ ...m, bracket: 'winners' })),
+          ...(tournament.losers_bracket || []).map(m => ({ ...m, bracket: 'losers' })),
+        ];
+        // Find the match that contains both bots (winnerId is one of them)
+        return allMatches.find(m =>
+          !m.winner_id &&
+          (m.status === 'pending' || m.status === 'pending_hold') &&
+          (m.bot1_id === winnerId || m.bot2_id === winnerId)
+        ) || getNextReadyMatch();
+      };
+      const matchSource = getActiveMatch();
       if (!matchSource) return;
       const { bracket, round } = matchSource;
       const match_number = Number(matchSource.match_number);
