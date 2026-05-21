@@ -188,8 +188,8 @@ export default function Home() {
       // LB R6 (#30): L16vsW29 → GF bot2
 
       // Match numbering:
-      // WB: #1(play-in), #2-#9(R1), #24-#27(R2), #28-#29(R3), #30(R4) → GF bot1
-      // LB: #10-#13(R1), #14-#17(R2), #18-#19(R3), #20-#21(R4), #22(R5), #23(R6) → GF bot2
+      // WB: #1(play-in R0), #2-#9(R1), #10-#13(R2), #14-#15(R3), #16(R4) → GF bot1
+      // LB: #17-#20(R1), #21-#24(R2), #25-#26(R3), #27-#28(R4), #29(R5), #30(R6) → GF bot2
 
       const wb = [
         // WB Play-in (round 0)
@@ -204,38 +204,38 @@ export default function Home() {
         { round: 1, match_number: 8,  bot1_id: byId(7),  bot2_id: byId(10), winner_id: null, status: 'pending' },
         { round: 1, match_number: 9,  bot1_id: byId(2),  bot2_id: byId(15), winner_id: null, status: 'pending' },
         // WB R2
-        { round: 2, match_number: 24, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W2 vs W9
-        { round: 2, match_number: 25, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W3 vs W8
-        { round: 2, match_number: 26, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W4 vs W7
-        { round: 2, match_number: 27, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W5 vs W6
+        { round: 2, match_number: 10, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W2 vs W9
+        { round: 2, match_number: 11, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W3 vs W8
+        { round: 2, match_number: 12, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W4 vs W7
+        { round: 2, match_number: 13, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W5 vs W6
         // WB R3
-        { round: 3, match_number: 28, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W24 vs W27
-        { round: 3, match_number: 29, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W25 vs W26
+        { round: 3, match_number: 14, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W10 vs W13
+        { round: 3, match_number: 15, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W11 vs W12
         // WB R4 → GF bot1
-        { round: 4, match_number: 30, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W28 vs W29
+        { round: 4, match_number: 16, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W14 vs W15
       ];
 
       const lb = [
         // LB R1: WB R1 losers pair up (4 matches)
-        { round: 1, match_number: 10, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L8 vs L9
-        { round: 1, match_number: 11, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L6 vs L7
-        { round: 1, match_number: 12, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L4 vs L5
-        { round: 1, match_number: 13, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L2 vs L3
+        { round: 1, match_number: 17, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L2 vs L3
+        { round: 1, match_number: 18, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L4 vs L5
+        { round: 1, match_number: 19, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L6 vs L7
+        { round: 1, match_number: 20, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L8 vs L9
         // LB R2: WB R2 losers vs LB R1 winners (4 matches)
-        { round: 2, match_number: 14, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L24 vs W10
-        { round: 2, match_number: 15, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L25 vs W11
-        { round: 2, match_number: 16, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L26 vs W12
-        { round: 2, match_number: 17, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L27 vs W13
+        { round: 2, match_number: 21, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L10 vs W17
+        { round: 2, match_number: 22, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L11 vs W18
+        { round: 2, match_number: 23, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L12 vs W19
+        { round: 2, match_number: 24, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L13 vs W20
         // LB R3: LB R2 winners pair up (2 matches)
-        { round: 3, match_number: 18, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W14 vs W15
-        { round: 3, match_number: 19, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W16 vs W17
+        { round: 3, match_number: 25, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W21 vs W22
+        { round: 3, match_number: 26, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W23 vs W24
         // LB R4: WB R3 losers vs LB R3 winners (2 matches)
-        { round: 4, match_number: 20, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L28 vs W18
-        { round: 4, match_number: 21, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L29 vs W19
+        { round: 4, match_number: 27, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L14 vs W25
+        { round: 4, match_number: 28, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L15 vs W26
         // LB R5: LB R4 winners (1 match)
-        { round: 5, match_number: 22, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W20 vs W21
+        { round: 5, match_number: 29, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // W27 vs W28
         // LB R6: WB R4 loser vs LB R5 winner → GF bot2
-        { round: 6, match_number: 23, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L30 vs W22
+        { round: 6, match_number: 30, bot1_id: null, bot2_id: null, winner_id: null, status: 'pending' }, // L16 vs W29
       ];
 
       const newTournament = await base44.entities.Tournament.create({
@@ -270,68 +270,68 @@ export default function Home() {
     // WB Play-in → WB R1 match #2 bot2 slot
     1:  { bracket: 'winners', match: 2,  slot: 'bot2_id' },
     // WB R1 → WB R2
-    2:  { bracket: 'winners', match: 24, slot: 'bot1_id' },
-    3:  { bracket: 'winners', match: 25, slot: 'bot2_id' },
-    4:  { bracket: 'winners', match: 26, slot: 'bot2_id' },
-    5:  { bracket: 'winners', match: 27, slot: 'bot2_id' },
-    6:  { bracket: 'winners', match: 27, slot: 'bot1_id' },
-    7:  { bracket: 'winners', match: 26, slot: 'bot1_id' },
-    8:  { bracket: 'winners', match: 25, slot: 'bot1_id' },
-    9:  { bracket: 'winners', match: 24, slot: 'bot2_id' },
+    2:  { bracket: 'winners', match: 10, slot: 'bot1_id' },
+    3:  { bracket: 'winners', match: 11, slot: 'bot2_id' },
+    4:  { bracket: 'winners', match: 12, slot: 'bot2_id' },
+    5:  { bracket: 'winners', match: 13, slot: 'bot2_id' },
+    6:  { bracket: 'winners', match: 13, slot: 'bot1_id' },
+    7:  { bracket: 'winners', match: 12, slot: 'bot1_id' },
+    8:  { bracket: 'winners', match: 11, slot: 'bot1_id' },
+    9:  { bracket: 'winners', match: 10, slot: 'bot2_id' },
     // WB R2 → WB R3
-    24: { bracket: 'winners', match: 28, slot: 'bot1_id' },
-    25: { bracket: 'winners', match: 29, slot: 'bot1_id' },
-    26: { bracket: 'winners', match: 29, slot: 'bot2_id' },
-    27: { bracket: 'winners', match: 28, slot: 'bot2_id' },
+    10: { bracket: 'winners', match: 14, slot: 'bot1_id' },
+    11: { bracket: 'winners', match: 15, slot: 'bot1_id' },
+    12: { bracket: 'winners', match: 15, slot: 'bot2_id' },
+    13: { bracket: 'winners', match: 14, slot: 'bot2_id' },
     // WB R3 → WB R4
-    28: { bracket: 'winners', match: 30, slot: 'bot1_id' },
-    29: { bracket: 'winners', match: 30, slot: 'bot2_id' },
+    14: { bracket: 'winners', match: 16, slot: 'bot1_id' },
+    15: { bracket: 'winners', match: 16, slot: 'bot2_id' },
     // WB R4 → Grand Finals bot1
-    30: { bracket: 'finals', slot: 'bot1_id' },
+    16: { bracket: 'finals', slot: 'bot1_id' },
     // LB R1 → LB R2 (as bot2 slot)
-    10: { bracket: 'losers', match: 14, slot: 'bot2_id' },
-    11: { bracket: 'losers', match: 15, slot: 'bot2_id' },
-    12: { bracket: 'losers', match: 16, slot: 'bot2_id' },
-    13: { bracket: 'losers', match: 17, slot: 'bot2_id' },
+    17: { bracket: 'losers', match: 21, slot: 'bot2_id' },
+    18: { bracket: 'losers', match: 22, slot: 'bot2_id' },
+    19: { bracket: 'losers', match: 23, slot: 'bot2_id' },
+    20: { bracket: 'losers', match: 24, slot: 'bot2_id' },
     // LB R2 → LB R3
-    14: { bracket: 'losers', match: 18, slot: 'bot1_id' },
-    15: { bracket: 'losers', match: 18, slot: 'bot2_id' },
-    16: { bracket: 'losers', match: 19, slot: 'bot1_id' },
-    17: { bracket: 'losers', match: 19, slot: 'bot2_id' },
+    21: { bracket: 'losers', match: 25, slot: 'bot1_id' },
+    22: { bracket: 'losers', match: 25, slot: 'bot2_id' },
+    23: { bracket: 'losers', match: 26, slot: 'bot1_id' },
+    24: { bracket: 'losers', match: 26, slot: 'bot2_id' },
     // LB R3 → LB R4 (as bot2, WB R3 losers are bot1)
-    18: { bracket: 'losers', match: 20, slot: 'bot2_id' },
-    19: { bracket: 'losers', match: 21, slot: 'bot2_id' },
+    25: { bracket: 'losers', match: 27, slot: 'bot2_id' },
+    26: { bracket: 'losers', match: 28, slot: 'bot2_id' },
     // LB R4 → LB R5
-    20: { bracket: 'losers', match: 22, slot: 'bot1_id' },
-    21: { bracket: 'losers', match: 22, slot: 'bot2_id' },
+    27: { bracket: 'losers', match: 29, slot: 'bot1_id' },
+    28: { bracket: 'losers', match: 29, slot: 'bot2_id' },
     // LB R5 → LB R6 (as bot2, WB R4 loser is bot1)
-    22: { bracket: 'losers', match: 23, slot: 'bot2_id' },
+    29: { bracket: 'losers', match: 30, slot: 'bot2_id' },
     // LB R6 → Grand Finals bot2
-    23: { bracket: 'finals', slot: 'bot2_id' },
+    30: { bracket: 'finals', slot: 'bot2_id' },
   };
 
   const LOSER_ADV = {
     // Play-in loser → ELIMINATED
     1:  null,
     // WB R1 losers → LB R1
-    2:  { bracket: 'losers', match: 13, slot: 'bot1_id' },
-    3:  { bracket: 'losers', match: 13, slot: 'bot2_id' },
-    4:  { bracket: 'losers', match: 12, slot: 'bot1_id' },
-    5:  { bracket: 'losers', match: 12, slot: 'bot2_id' },
-    6:  { bracket: 'losers', match: 11, slot: 'bot1_id' },
-    7:  { bracket: 'losers', match: 11, slot: 'bot2_id' },
-    8:  { bracket: 'losers', match: 10, slot: 'bot1_id' },
-    9:  { bracket: 'losers', match: 10, slot: 'bot2_id' },
+    2:  { bracket: 'losers', match: 17, slot: 'bot1_id' },
+    3:  { bracket: 'losers', match: 17, slot: 'bot2_id' },
+    4:  { bracket: 'losers', match: 18, slot: 'bot1_id' },
+    5:  { bracket: 'losers', match: 18, slot: 'bot2_id' },
+    6:  { bracket: 'losers', match: 19, slot: 'bot1_id' },
+    7:  { bracket: 'losers', match: 19, slot: 'bot2_id' },
+    8:  { bracket: 'losers', match: 20, slot: 'bot1_id' },
+    9:  { bracket: 'losers', match: 20, slot: 'bot2_id' },
     // WB R2 losers → LB R2 (as bot1 slot)
-    24: { bracket: 'losers', match: 14, slot: 'bot1_id' },
-    25: { bracket: 'losers', match: 15, slot: 'bot1_id' },
-    26: { bracket: 'losers', match: 16, slot: 'bot1_id' },
-    27: { bracket: 'losers', match: 17, slot: 'bot1_id' },
+    10: { bracket: 'losers', match: 21, slot: 'bot1_id' },
+    11: { bracket: 'losers', match: 22, slot: 'bot1_id' },
+    12: { bracket: 'losers', match: 23, slot: 'bot1_id' },
+    13: { bracket: 'losers', match: 24, slot: 'bot1_id' },
     // WB R3 losers → LB R4 (as bot1 slot)
-    28: { bracket: 'losers', match: 20, slot: 'bot1_id' },
-    29: { bracket: 'losers', match: 21, slot: 'bot1_id' },
+    14: { bracket: 'losers', match: 27, slot: 'bot1_id' },
+    15: { bracket: 'losers', match: 28, slot: 'bot1_id' },
     // WB R4 loser → LB R6 (as bot1 slot)
-    30: { bracket: 'losers', match: 23, slot: 'bot1_id' },
+    16: { bracket: 'losers', match: 30, slot: 'bot1_id' },
   };
 
   const selectWinnerMutation = useMutation({
